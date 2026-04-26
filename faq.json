@@ -1,0 +1,34 @@
+[
+  {
+    "pergunta": "vocês aceitam cartão",
+    "resposta": "Sim! Aceitamos cartão de débito, crédito e Pix. 💳"
+  },
+  {
+    "pergunta": "tem estacionamento",
+    "resposta": "Sim, temos estacionamento gratuito para clientes logo em frente à barbearia! 🚗"
+  },
+  {
+    "pergunta": "quanto tempo demora o corte",
+    "resposta": "Um corte leva em média 30 minutos. O combo (corte + barba) leva cerca de 50 minutos. ⏱️"
+  },
+  {
+    "pergunta": "tem wifi",
+    "resposta": "Sim, oferecemos Wi-Fi gratuito para nossos clientes! 📶"
+  },
+  {
+    "pergunta": "aceitam crianças",
+    "resposta": "Sim! Atendemos crianças a partir de 5 anos. O valor é o mesmo do corte adulto: R$45. 👦"
+  },
+  {
+    "pergunta": "tem sobrancelha",
+    "resposta": "Sim! Fazemos design de sobrancelha por R$20, podendo ser combinado com qualquer serviço. 🪒"
+  },
+  {
+    "pergunta": "posso ir sem agendar",
+    "resposta": "Pode sim! Mas agendando você garante seu horário sem fila. Recomendamos agendar pelo link: "
+  },
+  {
+    "pergunta": "primeira vez",
+    "resposta": "Seja bem-vindo! Na primeira visita temos 10% de desconto no corte. 🎉 Só falar com o atendente!"
+  }
+]
