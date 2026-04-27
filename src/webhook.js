@@ -11,6 +11,7 @@ const { classifyIntent, buildReply } = require("./intentClassifier");
 const { matchFaq } = require("./faqMatcher");
 const { aiReply } = require("./aiReply");
 const { sendMessage } = require("./whatsapp");
+const { addConversation } = require("./conversations");
 
 // ── GET: Meta verifies the webhook URL when you register it ──
 router.get("/", (req, res) => {
@@ -36,40 +37,53 @@ router.post("/", async (req, res) => {
     const entry   = req.body?.entry?.[0];
     const change  = entry?.changes?.[0]?.value;
     const message = change?.messages?.[0];
+    const contact = change?.contacts?.[0];
 
-    // Ignore delivery receipts, read receipts, and other status updates
     if (!message) return;
-
-    // We only handle plain text messages for now
     if (message.type !== "text") return;
 
-    const phone = message.from;           // e.g. "5511999998888"
+    const phone = message.from;
+    const name  = contact?.profile?.name || "Desconhecido";
     const text  = message.text.body.trim();
 
     console.log(`[webhook] Message from ${phone}: "${text}"`);
 
-    const reply = await handleMessage(phone, text);
+    const { reply, source } = await handleMessage(phone, text);
     await sendMessage(phone, reply);
+    addConversation(phone, name, text, reply, source);
 
     console.log(`[webhook] Replied to ${phone}: "${reply}"`);
+
+    // Escalação: cliente pediu atendente humano → avisa a barbearia
+    if (source === "human" && process.env.BARBERSHOP_PHONE) {
+      const alert =
+        `🆘 *Cliente quer atendimento humano*\n\n` +
+        `👤 ${name}\n` +
+        `📱 +${phone}\n` +
+        `💬 "${text}"\n\n` +
+        `Responda direto pelo WhatsApp.`;
+      try {
+        await sendMessage(process.env.BARBERSHOP_PHONE, alert);
+        console.log(`[webhook] Escalation sent to barbershop`);
+      } catch (e) {
+        console.error("[webhook] Failed to notify barbershop:", e.message);
+      }
+    }
   } catch (err) {
-    // Log the error but never crash — 200 was already sent to Meta
     console.error("[webhook] Error processing message:", err.message);
   }
 });
 
 // ── Core message-handling logic ───────────────────────────────
 async function handleMessage(phone, text) {
-  // 1. Keyword intents (greetings, prices, hours, booking, etc.)
   const intent = classifyIntent(text);
-  if (intent) return buildReply(intent);
+  if (intent) return { reply: buildReply(intent), source: intent };
 
-  // 2. FAQ — perguntas e respostas que o dono cadastrou em faq.json
   const faqAnswer = matchFaq(text);
-  if (faqAnswer) return faqAnswer;
+  if (faqAnswer) return { reply: faqAnswer, source: "faq" };
 
-  // 3. Fallback — Claude responde com contexto do FAQ injetado
-  return aiReply(phone, text);
+  const aiAnswer = await aiReply(phone, text);
+  return { reply: aiAnswer, source: "ai" };
 }
 
 module.exports = router;
