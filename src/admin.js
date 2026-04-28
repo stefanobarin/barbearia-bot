@@ -9,7 +9,7 @@
 // ─────────────────────────────────────────────────────────────
 const express = require("express");
 const { getAll, todayConversations, weekConversations, byPhone } = require("./conversations");
-const { getAll: getFaqAll, addFaqEntry, removeFaqEntry } = require("./faqMatcher");
+const { getAll: getFaqAll, addFaqEntry, removeFaqEntry, updateFaqEntry } = require("./faqMatcher");
 
 const router = express.Router();
 
@@ -69,17 +69,18 @@ const CSS = `
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    background: #111;
-    color: #eee;
+    background: #f1f5f9;
+    color: #0f172a;
     min-height: 100vh;
   }
-  a { color: #d4a843; text-decoration: none; }
+  a { color: #2563eb; text-decoration: none; }
   a:hover { text-decoration: underline; }
 
   /* Header */
   .header {
-    background: #1a1a1a;
-    border-bottom: 2px solid #d4a843;
+    background: #ffffff;
+    border-bottom: 1px solid #e2e8f0;
+    box-shadow: 0 1px 3px rgba(15,23,42,0.04);
     padding: 1rem 1.5rem;
     display: flex;
     align-items: center;
@@ -88,45 +89,55 @@ const CSS = `
     top: 0;
     z-index: 10;
   }
-  .header-logo { font-size: 2rem; }
-  .header-title h1 { font-size: 1.3rem; color: #d4a843; font-weight: 700; letter-spacing: 0.5px; }
-  .header-title p { font-size: 0.78rem; color: #888; margin-top: 2px; }
-  .header-nav { margin-left: auto; display: flex; gap: 0.5rem; }
+  .header-logo {
+    font-size: 1.5rem;
+    width: 42px; height: 42px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    color: #fff;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .header-title h1 { font-size: 1.15rem; color: #0f172a; font-weight: 700; letter-spacing: -0.2px; }
+  .header-title p { font-size: 0.78rem; color: #64748b; margin-top: 2px; }
+  .header-nav { margin-left: auto; display: flex; gap: 0.4rem; }
   .nav-btn {
-    padding: 0.4rem 0.9rem;
-    border-radius: 6px;
-    font-size: 0.8rem;
+    padding: 0.45rem 0.95rem;
+    border-radius: 8px;
+    font-size: 0.82rem;
     font-weight: 600;
-    background: #2a2a2a;
-    color: #ccc;
-    border: 1px solid #333;
+    background: transparent;
+    color: #475569;
+    border: 1px solid transparent;
     cursor: pointer;
     transition: all 0.15s;
   }
-  .nav-btn:hover, .nav-btn.active { background: #d4a843; color: #111; border-color: #d4a843; }
+  .nav-btn:hover { background: #f1f5f9; color: #0f172a; text-decoration: none; }
+  .nav-btn.active { background: #2563eb; color: #fff; }
 
   /* Main */
-  .main { max-width: 980px; margin: 0 auto; padding: 1.5rem; }
+  .main { max-width: 1080px; margin: 0 auto; padding: 1.8rem 1.5rem; }
 
   /* Stats cards */
   .stats-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 1rem;
-    margin-bottom: 1.5rem;
+    margin-bottom: 1.8rem;
   }
   .stat-card {
-    background: #1a1a1a;
-    border: 1px solid #2a2a2a;
-    border-radius: 10px;
-    padding: 1rem 1.2rem;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 1.1rem 1.3rem;
     display: flex;
     flex-direction: column;
-    gap: 0.3rem;
+    gap: 0.35rem;
+    transition: border-color 0.15s, transform 0.15s;
   }
-  .stat-card .icon { font-size: 1.4rem; }
-  .stat-card .value { font-size: 2rem; font-weight: 700; color: #d4a843; line-height: 1; }
-  .stat-card .label { font-size: 0.75rem; color: #888; text-transform: uppercase; letter-spacing: 0.5px; }
+  .stat-card:hover { border-color: #2563eb; }
+  .stat-card .icon { font-size: 1.3rem; opacity: 0.9; }
+  .stat-card .value { font-size: 2rem; font-weight: 700; color: #0f172a; line-height: 1; letter-spacing: -1px; }
+  .stat-card .label { font-size: 0.72rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
 
   /* Toolbar */
   .toolbar {
@@ -135,53 +146,58 @@ const CSS = `
     gap: 0.5rem;
     margin-bottom: 1.2rem;
     align-items: center;
+    background: #fff;
+    padding: 0.8rem 1rem;
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
   }
   .filter-btn {
     padding: 0.4rem 0.9rem;
     border-radius: 6px;
     font-size: 0.82rem;
     font-weight: 600;
-    background: #1e1e1e;
-    color: #aaa;
-    border: 1px solid #2e2e2e;
+    background: #f8fafc;
+    color: #475569;
+    border: 1px solid #e2e8f0;
     cursor: pointer;
     transition: all 0.15s;
     text-decoration: none;
     display: inline-block;
   }
-  .filter-btn:hover { background: #2a2a2a; color: #eee; text-decoration: none; }
-  .filter-btn.active { background: #d4a843; color: #111; border-color: #d4a843; }
+  .filter-btn:hover { background: #eff6ff; color: #2563eb; border-color: #bfdbfe; text-decoration: none; }
+  .filter-btn.active { background: #2563eb; color: #fff; border-color: #2563eb; }
   .search-input {
     margin-left: auto;
-    padding: 0.4rem 0.8rem;
+    padding: 0.45rem 0.8rem;
     border-radius: 6px;
-    border: 1px solid #2e2e2e;
-    background: #1e1e1e;
-    color: #eee;
-    font-size: 0.82rem;
-    width: 220px;
+    border: 1px solid #e2e8f0;
+    background: #f8fafc;
+    color: #0f172a;
+    font-size: 0.85rem;
+    width: 240px;
     outline: none;
   }
-  .search-input:focus { border-color: #d4a843; }
-  .source-filter { font-size: 0.82rem; padding: 0.4rem 0.7rem; border-radius: 6px; border: 1px solid #2e2e2e; background: #1e1e1e; color: #eee; outline: none; cursor: pointer; }
-  .source-filter:focus { border-color: #d4a843; }
+  .search-input:focus { border-color: #2563eb; background: #fff; box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+  .source-filter { font-size: 0.82rem; padding: 0.45rem 0.7rem; border-radius: 6px; border: 1px solid #e2e8f0; background: #f8fafc; color: #0f172a; outline: none; cursor: pointer; }
+  .source-filter:focus { border-color: #2563eb; }
 
   /* Conversation cards */
   .conv-card {
-    background: #1a1a1a;
-    border: 1px solid #2a2a2a;
-    border-radius: 10px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
     margin-bottom: 0.8rem;
     padding: 1rem 1.2rem;
-    border-left: 4px solid #333;
-    transition: border-color 0.15s;
+    border-left: 4px solid #cbd5e1;
+    transition: box-shadow 0.15s, border-color 0.15s;
   }
-  .conv-card:hover { border-color: #d4a843; }
-  .conv-card.human { border-left-color: #e53935; }
-  .conv-card.ai { border-left-color: #1976d2; }
-  .conv-card.faq { border-left-color: #388e3c; }
-  .conv-card.booking { border-left-color: #7b1fa2; }
-  .conv-card.prices { border-left-color: #f57c00; }
+  .conv-card:hover { box-shadow: 0 4px 12px rgba(15,23,42,0.06); }
+  .conv-card.human { border-left-color: #dc2626; }
+  .conv-card.ai { border-left-color: #2563eb; }
+  .conv-card.faq { border-left-color: #16a34a; }
+  .conv-card.booking { border-left-color: #7c3aed; }
+  .conv-card.prices { border-left-color: #ea580c; }
+  .conv-card.greeting { border-left-color: #0891b2; }
 
   .conv-meta {
     display: flex;
@@ -190,137 +206,164 @@ const CSS = `
     align-items: center;
     margin-bottom: 0.7rem;
     font-size: 0.8rem;
-    color: #888;
+    color: #64748b;
   }
-  .conv-meta .name { color: #d4a843; font-weight: 600; font-size: 0.9rem; }
-  .conv-meta .phone-link { color: #888; font-size: 0.8rem; }
-  .conv-meta .phone-link:hover { color: #d4a843; }
-  .conv-meta .time { margin-left: auto; }
+  .conv-meta .name { color: #2563eb; font-weight: 600; font-size: 0.92rem; }
+  .conv-meta .phone-link { color: #64748b; font-size: 0.82rem; }
+  .conv-meta .phone-link:hover { color: #2563eb; }
+  .conv-meta .time { margin-left: auto; color: #94a3b8; }
 
   .badge {
     display: inline-flex;
     align-items: center;
-    padding: 2px 8px;
-    border-radius: 10px;
+    padding: 2px 9px;
+    border-radius: 12px;
     font-size: 0.72rem;
     font-weight: 600;
-    background: #2a2a2a;
-    color: #bbb;
+    background: #f1f5f9;
+    color: #475569;
   }
-  .badge.human { background: #4a1212; color: #ef9a9a; }
-  .badge.ai { background: #102840; color: #90caf9; }
-  .badge.faq { background: #0d2e12; color: #a5d6a7; }
-  .badge.booking { background: #2a1040; color: #ce93d8; }
-  .badge.prices { background: #3e1e00; color: #ffcc80; }
+  .badge.human { background: #fee2e2; color: #b91c1c; }
+  .badge.ai { background: #dbeafe; color: #1d4ed8; }
+  .badge.faq { background: #dcfce7; color: #15803d; }
+  .badge.booking { background: #ede9fe; color: #6d28d9; }
+  .badge.prices { background: #ffedd5; color: #c2410c; }
+  .badge.greeting { background: #cffafe; color: #0e7490; }
 
   .chat-bubbles { display: flex; flex-direction: column; gap: 0.5rem; }
-  .bubble { max-width: 88%; padding: 0.6rem 0.9rem; border-radius: 10px; font-size: 0.88rem; line-height: 1.45; }
+  .bubble { max-width: 88%; padding: 0.6rem 0.95rem; border-radius: 12px; font-size: 0.88rem; line-height: 1.5; white-space: pre-wrap; }
   .bubble.client {
-    background: #2a2a2a;
-    color: #eee;
+    background: #f1f5f9;
+    color: #0f172a;
     align-self: flex-start;
     border-bottom-left-radius: 3px;
   }
   .bubble.bot {
-    background: #1e3a1e;
-    color: #c8e6c9;
+    background: #2563eb;
+    color: #fff;
     align-self: flex-end;
     border-bottom-right-radius: 3px;
   }
-  .bubble-label { font-size: 0.7rem; color: #666; margin-bottom: 2px; }
+  .bubble-label { font-size: 0.7rem; color: #94a3b8; margin-bottom: 3px; font-weight: 600; }
 
   /* Empty state */
   .empty {
     text-align: center;
-    color: #555;
+    color: #94a3b8;
     padding: 3rem;
-    background: #1a1a1a;
-    border-radius: 10px;
+    background: #ffffff;
+    border: 1px dashed #cbd5e1;
+    border-radius: 12px;
     font-size: 0.95rem;
   }
   .empty .icon { font-size: 2.5rem; display: block; margin-bottom: 0.5rem; }
 
   /* FAQ page */
-  .section-title { font-size: 1rem; color: #d4a843; font-weight: 700; margin-bottom: 1rem; }
+  .section-title { font-size: 0.95rem; color: #0f172a; font-weight: 700; margin-bottom: 1rem; }
   .faq-card {
-    background: #1a1a1a;
-    border: 1px solid #2a2a2a;
-    border-radius: 10px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
     padding: 1rem 1.2rem;
     margin-bottom: 0.7rem;
     display: flex;
     flex-direction: column;
     gap: 0.4rem;
   }
-  .faq-card .q { font-weight: 600; color: #d4a843; font-size: 0.9rem; }
-  .faq-card .a { color: #bbb; font-size: 0.88rem; line-height: 1.4; }
-  .faq-card .actions { margin-top: 0.4rem; }
+  .faq-card .q { font-weight: 600; color: #0f172a; font-size: 0.92rem; }
+  .faq-card .a { color: #475569; font-size: 0.88rem; line-height: 1.5; white-space: pre-wrap; }
+  .faq-card .actions { margin-top: 0.5rem; display: flex; gap: 0.4rem; }
+  .btn-secondary {
+    background: #f1f5f9;
+    color: #2563eb;
+    border: 1px solid #bfdbfe;
+    padding: 0.35rem 0.85rem;
+    border-radius: 6px;
+    font-size: 0.78rem;
+    cursor: pointer;
+    font-weight: 600;
+    text-decoration: none;
+    display: inline-block;
+  }
+  .btn-secondary:hover { background: #dbeafe; text-decoration: none; }
   .btn-danger {
-    background: #4a1212;
-    color: #ef9a9a;
-    border: 1px solid #6a2020;
-    padding: 0.3rem 0.8rem;
+    background: #fff;
+    color: #dc2626;
+    border: 1px solid #fecaca;
+    padding: 0.35rem 0.85rem;
     border-radius: 6px;
     font-size: 0.78rem;
     cursor: pointer;
     font-weight: 600;
   }
-  .btn-danger:hover { background: #6a1515; }
+  .btn-danger:hover { background: #fee2e2; }
 
   .add-form {
-    background: #1a1a1a;
-    border: 1px solid #2a2a2a;
-    border-radius: 10px;
-    padding: 1.2rem;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 1.3rem;
     margin-bottom: 1.5rem;
   }
-  .add-form h3 { color: #d4a843; font-size: 0.9rem; margin-bottom: 1rem; }
-  .form-group { margin-bottom: 0.8rem; }
-  .form-group label { display: block; font-size: 0.78rem; color: #888; margin-bottom: 0.3rem; text-transform: uppercase; letter-spacing: 0.5px; }
+  .add-form h3 { color: #0f172a; font-size: 0.95rem; margin-bottom: 1rem; }
+  .form-group { margin-bottom: 0.9rem; }
+  .form-group label { display: block; font-size: 0.74rem; color: #64748b; margin-bottom: 0.35rem; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
   .form-input, .form-textarea {
     width: 100%;
-    background: #111;
-    border: 1px solid #2e2e2e;
-    border-radius: 6px;
-    color: #eee;
-    padding: 0.5rem 0.7rem;
-    font-size: 0.88rem;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 7px;
+    color: #0f172a;
+    padding: 0.55rem 0.75rem;
+    font-size: 0.9rem;
     font-family: inherit;
     outline: none;
+    transition: all 0.15s;
   }
-  .form-input:focus, .form-textarea:focus { border-color: #d4a843; }
-  .form-textarea { min-height: 80px; resize: vertical; }
+  .form-input:focus, .form-textarea:focus { border-color: #2563eb; background: #fff; box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+  .form-textarea { min-height: 90px; resize: vertical; }
   .btn-primary {
-    background: #d4a843;
-    color: #111;
+    background: #2563eb;
+    color: #fff;
     border: none;
-    padding: 0.5rem 1.2rem;
-    border-radius: 6px;
-    font-size: 0.88rem;
-    font-weight: 700;
+    padding: 0.55rem 1.3rem;
+    border-radius: 7px;
+    font-size: 0.9rem;
+    font-weight: 600;
     cursor: pointer;
     transition: background 0.15s;
   }
-  .btn-primary:hover { background: #c49535; }
+  .btn-primary:hover { background: #1d4ed8; }
+
+  .alert-success {
+    background: #dcfce7;
+    border: 1px solid #86efac;
+    border-radius: 8px;
+    padding: 0.7rem 1rem;
+    margin-bottom: 1rem;
+    color: #15803d;
+    font-size: 0.88rem;
+    font-weight: 500;
+  }
 
   /* CRM cliente */
-  .back-link { display: inline-flex; align-items: center; gap: 0.4rem; color: #888; font-size: 0.85rem; margin-bottom: 1.2rem; }
-  .back-link:hover { color: #d4a843; }
+  .back-link { display: inline-flex; align-items: center; gap: 0.4rem; color: #64748b; font-size: 0.85rem; margin-bottom: 1.2rem; }
+  .back-link:hover { color: #2563eb; }
   .client-header {
-    background: #1a1a1a;
-    border: 1px solid #2a2a2a;
-    border-radius: 10px;
-    padding: 1.2rem;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 1.3rem;
     margin-bottom: 1.2rem;
     display: flex;
     flex-direction: column;
     gap: 0.3rem;
   }
-  .client-header .cname { font-size: 1.3rem; color: #d4a843; font-weight: 700; }
-  .client-header .cphone { color: #888; font-size: 0.88rem; }
-  .client-stats { display: flex; gap: 1.5rem; margin-top: 0.5rem; flex-wrap: wrap; }
-  .client-stats .cs { font-size: 0.82rem; color: #aaa; }
-  .client-stats .cs span { color: #d4a843; font-weight: 700; }
+  .client-header .cname { font-size: 1.4rem; color: #0f172a; font-weight: 700; letter-spacing: -0.3px; }
+  .client-header .cphone { color: #64748b; font-size: 0.88rem; }
+  .client-stats { display: flex; gap: 1.8rem; margin-top: 0.7rem; flex-wrap: wrap; padding-top: 0.7rem; border-top: 1px solid #f1f5f9; }
+  .client-stats .cs { font-size: 0.82rem; color: #64748b; }
+  .client-stats .cs span { color: #2563eb; font-weight: 700; font-size: 0.95rem; }
 `;
 
 // ── Dashboard principal ───────────────────────────────────────
@@ -481,7 +524,7 @@ router.get("/faq", (req, res) => {
   </header>
 
   <main class="main">
-    ${msg ? `<div style="background:#0d2e12;border:1px solid #2e6e2e;border-radius:8px;padding:0.8rem 1rem;margin-bottom:1rem;color:#a5d6a7;font-size:0.88rem;">✅ ${escapeHtml(msg)}</div>` : ""}
+    ${msg ? `<div class="alert-success">✅ ${escapeHtml(msg)}</div>` : ""}
 
     <!-- Formulário para adicionar -->
     <div class="add-form">
@@ -503,18 +546,41 @@ router.get("/faq", (req, res) => {
     <p class="section-title">📋 ${entries.length} entrada${entries.length !== 1 ? "s" : ""} no FAQ</p>
     ${entries.length === 0
       ? `<div class="empty"><span class="icon">📭</span>Nenhuma entrada no FAQ ainda.</div>`
-      : entries.map((e, i) => `
-      <div class="faq-card">
-        <div class="q">❓ ${escapeHtml(e.pergunta)}</div>
-        <div class="a">💬 ${escapeHtml(e.resposta)}</div>
-        <div class="actions">
-          <form method="POST" action="/admin/faq/delete" style="display:inline" onsubmit="return confirm('Remover esta entrada?')">
-            <input type="hidden" name="index" value="${i}">
-            <button class="btn-danger" type="submit">🗑️ Remover</button>
-          </form>
-        </div>
-      </div>
-    `).join("")}
+      : entries.map((e, i) => {
+          const editing = String(req.query.edit) === String(i);
+          if (editing) {
+            return `
+            <div class="faq-card">
+              <form method="POST" action="/admin/faq/update">
+                <input type="hidden" name="index" value="${i}">
+                <div class="form-group">
+                  <label>Pergunta</label>
+                  <input class="form-input" name="pergunta" value="${escapeHtml(e.pergunta)}" required>
+                </div>
+                <div class="form-group">
+                  <label>Resposta</label>
+                  <textarea class="form-textarea" name="resposta" required>${escapeHtml(e.resposta)}</textarea>
+                </div>
+                <div style="display:flex;gap:0.5rem;">
+                  <button class="btn-primary" type="submit">Salvar alterações</button>
+                  <a href="/admin/faq" class="btn-secondary">Cancelar</a>
+                </div>
+              </form>
+            </div>`;
+          }
+          return `
+          <div class="faq-card">
+            <div class="q">❓ ${escapeHtml(e.pergunta)}</div>
+            <div class="a">💬 ${escapeHtml(e.resposta)}</div>
+            <div class="actions">
+              <a href="/admin/faq?edit=${i}" class="btn-secondary">✏️ Editar</a>
+              <form method="POST" action="/admin/faq/delete" style="display:inline" onsubmit="return confirm('Remover esta entrada do FAQ?')">
+                <input type="hidden" name="index" value="${i}">
+                <button class="btn-danger" type="submit">🗑️ Remover</button>
+              </form>
+            </div>
+          </div>`;
+        }).join("")}
   </main>
 </body>
 </html>`;
@@ -530,6 +596,16 @@ router.post("/faq", express.urlencoded({ extended: false }), (req, res) => {
     addFaqEntry(pergunta, resposta);
   }
   res.redirect("/admin/faq?msg=Entrada adicionada com sucesso!");
+});
+
+// ── FAQ: editar ───────────────────────────────────────────────
+router.post("/faq/update", express.urlencoded({ extended: false }), (req, res) => {
+  const index = parseInt(req.body.index, 10);
+  const { pergunta, resposta } = req.body;
+  if (!isNaN(index) && pergunta && resposta) {
+    updateFaqEntry(index, pergunta, resposta);
+  }
+  res.redirect("/admin/faq?msg=Entrada atualizada com sucesso!");
 });
 
 // ── FAQ: remover ──────────────────────────────────────────────

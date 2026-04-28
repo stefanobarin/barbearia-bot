@@ -10,13 +10,19 @@
 const path = require("path");
 const fs   = require("fs");
 
-const faqPath = path.join(__dirname, "..", "faq.json");
+const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, "..");
+const faqPath = path.join(DATA_DIR, "faq.json");
+const seedPath = path.join(__dirname, "..", "faq.json");
 let faqEntries = [];
 
 function loadFaq() {
   try {
+    fs.mkdirSync(DATA_DIR, { recursive: true });
+    if (!fs.existsSync(faqPath) && fs.existsSync(seedPath)) {
+      fs.copyFileSync(seedPath, faqPath);
+    }
     faqEntries = JSON.parse(fs.readFileSync(faqPath, "utf-8"));
-    console.log(`[faq] ${faqEntries.length} entradas carregadas.`);
+    console.log(`[faq] ${faqEntries.length} entradas carregadas de ${faqPath}`);
   } catch (err) {
     console.warn("[faq] Não foi possível carregar faq.json:", err.message);
   }
@@ -86,4 +92,10 @@ function removeFaqEntry(index) {
   fs.writeFileSync(faqPath, JSON.stringify(faqEntries, null, 2));
 }
 
-module.exports = { matchFaq, getFaqContext, getAll, addFaqEntry, removeFaqEntry };
+function updateFaqEntry(index, pergunta, resposta) {
+  if (index < 0 || index >= faqEntries.length) return;
+  faqEntries[index] = { pergunta: pergunta.trim(), resposta: resposta.trim() };
+  fs.writeFileSync(faqPath, JSON.stringify(faqEntries, null, 2));
+}
+
+module.exports = { matchFaq, getFaqContext, getAll, addFaqEntry, removeFaqEntry, updateFaqEntry };

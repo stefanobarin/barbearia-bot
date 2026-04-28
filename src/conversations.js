@@ -7,7 +7,9 @@
 const fs = require("fs");
 const path = require("path");
 
-const FILE = path.join(__dirname, "..", "conversations.json");
+const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, "..");
+const FILE = path.join(DATA_DIR, "conversations.json");
+try { fs.mkdirSync(DATA_DIR, { recursive: true }); } catch {}
 const MAX_ENTRIES = 5000;
 
 function load() {
