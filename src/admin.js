@@ -10,7 +10,7 @@
 const express = require("express");
 const crypto = require("crypto");
 const { getAll, todayConversations, weekConversations, byPhone } = require("./conversations");
-const { getAll: getFaqAll, addFaqEntry, removeFaqEntry, updateFaqEntry } = require("./faqMatcher");
+const { getAll: getFaqAll, addFaqEntry, removeFaqEntry, updateFaqEntry, resetFaqFromSeed } = require("./faqMatcher");
 
 const router = express.Router();
 
@@ -549,7 +549,12 @@ router.get("/faq", (req, res) => {
     </div>
 
     <!-- Lista do FAQ atual -->
-    <p class="section-title">📋 ${entries.length} entrada${entries.length !== 1 ? "s" : ""} no FAQ</p>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
+      <p class="section-title" style="margin:0;">📋 ${entries.length} entrada${entries.length !== 1 ? "s" : ""} no FAQ</p>
+      <form method="POST" action="/admin/faq/reset" style="display:inline;" onsubmit="return confirm('⚠️ Isso vai SUBSTITUIR todo o FAQ atual pelo padrão do código (faq.json do repo). Deseja continuar?')">
+        <button class="btn-secondary" type="submit" style="font-size:0.78rem;">🔄 Restaurar FAQ padrão</button>
+      </form>
+    </div>
     ${entries.length === 0
       ? `<div class="empty"><span class="icon">📭</span>Nenhuma entrada no FAQ ainda.</div>`
       : entries.map((e, i) => {
@@ -603,6 +608,15 @@ router.post("/faq", express.urlencoded({ extended: false, limit: "10kb" }), (req
     addFaqEntry(pergunta, resposta);
   }
   res.redirect("/admin/faq?msg=Entrada adicionada com sucesso!");
+});
+
+// ── FAQ: resetar do seed ──────────────────────────────────────
+router.post("/faq/reset", express.urlencoded({ extended: false, limit: "1kb" }), (_req, res) => {
+  const ok = resetFaqFromSeed();
+  res.redirect(
+    "/admin/faq?msg=" +
+      encodeURIComponent(ok ? "FAQ restaurado para o padrão do código." : "Não foi possível restaurar (seed não encontrado).")
+  );
 });
 
 // ── FAQ: editar ───────────────────────────────────────────────

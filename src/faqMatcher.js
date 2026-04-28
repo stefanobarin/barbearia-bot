@@ -98,4 +98,19 @@ function updateFaqEntry(index, pergunta, resposta) {
   fs.writeFileSync(faqPath, JSON.stringify(faqEntries, null, 2));
 }
 
-module.exports = { matchFaq, getFaqContext, getAll, addFaqEntry, removeFaqEntry, updateFaqEntry };
+function resetFaqFromSeed() {
+  if (!fs.existsSync(seedPath)) return false;
+  fs.copyFileSync(seedPath, faqPath);
+  loadFaq();
+  return true;
+}
+
+module.exports = {
+  matchFaq,
+  getFaqContext,
+  getAll,
+  addFaqEntry,
+  removeFaqEntry,
+  updateFaqEntry,
+  resetFaqFromSeed,
+};
