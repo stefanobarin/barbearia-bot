@@ -66,6 +66,7 @@ function sourceLabel(s) {
     services: "✂️ Serviços",
     hours: "🕐 Horário",
     location: "📍 Localização",
+    followup: "🔔 Follow-up",
   };
   return map[s] || s;
 }
@@ -204,6 +205,7 @@ const CSS = `
   .conv-card.booking { border-left-color: #7c3aed; }
   .conv-card.prices { border-left-color: #ea580c; }
   .conv-card.greeting { border-left-color: #0891b2; }
+  .conv-card.followup { border-left-color: #f59e0b; }
 
   .conv-meta {
     display: flex;
@@ -235,6 +237,7 @@ const CSS = `
   .badge.booking { background: #ede9fe; color: #6d28d9; }
   .badge.prices { background: #ffedd5; color: #c2410c; }
   .badge.greeting { background: #cffafe; color: #0e7490; }
+  .badge.followup { background: #fef3c7; color: #b45309; }
 
   .chat-bubbles { display: flex; flex-direction: column; gap: 0.5rem; }
   .bubble { max-width: 88%; padding: 0.6rem 0.95rem; border-radius: 12px; font-size: 0.88rem; line-height: 1.5; white-space: pre-wrap; }
@@ -448,6 +451,7 @@ router.get("/", (req, res) => {
         <option value="booking">📅 Agendamento</option>
         <option value="prices">💰 Preços</option>
         <option value="greeting">👋 Saudação</option>
+        <option value="followup">🔔 Follow-up</option>
       </select>
       <input
         class="search-input"
