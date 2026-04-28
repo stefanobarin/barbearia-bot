@@ -11,6 +11,7 @@ const express = require("express");
 const crypto = require("crypto");
 const { getAll, todayConversations, weekConversations, byPhone } = require("./conversations");
 const { getAll: getFaqAll, addFaqEntry, removeFaqEntry, updateFaqEntry, resetFaqFromSeed } = require("./faqMatcher");
+const { sendAlert } = require("./alerts");
 
 const router = express.Router();
 
@@ -612,6 +613,19 @@ router.post("/faq", express.urlencoded({ extended: false, limit: "10kb" }), (req
     addFaqEntry(pergunta, resposta);
   }
   res.redirect("/admin/faq?msg=Entrada adicionada com sucesso!");
+});
+
+// ── Teste de alerta ───────────────────────────────────────────
+router.get("/test-alert", async (_req, res) => {
+  try {
+    await sendAlert(
+      "manual_test_" + Date.now(),
+      "🧪 Este é um alerta de teste manual. Se você está vendo essa mensagem, os alertas estão funcionando!"
+    );
+    res.send("Alerta enviado para OWNER_PHONE. Verifique seu WhatsApp.");
+  } catch (e) {
+    res.status(500).send("Falha ao enviar: " + e.message);
+  }
 });
 
 // ── FAQ: resetar do seed ──────────────────────────────────────

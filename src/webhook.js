@@ -13,6 +13,7 @@ const { matchFaq } = require("./faqMatcher");
 const { aiReply } = require("./aiReply");
 const { sendMessage } = require("./whatsapp");
 const { addConversation } = require("./conversations");
+const { sendAlert } = require("./alerts");
 
 function maskPhone(p) {
   if (!p || p.length < 6) return "***";
@@ -102,6 +103,7 @@ router.post("/", async (req, res) => {
     }
   } catch (err) {
     console.error("[webhook] Error processing message:", err.message);
+    sendAlert("webhook_error", `⚠️ Erro ao processar mensagem do cliente:\n${err.message}`);
   }
 });
 

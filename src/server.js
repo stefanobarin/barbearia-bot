@@ -9,6 +9,22 @@ const webhookRouter = require("./webhook");
 const adminRouter = require("./admin");
 const { startDailyReport } = require("./dailyReport");
 const { startFollowUp } = require("./followUp");
+const { sendAlert } = require("./alerts");
+
+process.on("uncaughtException", async (err) => {
+  console.error("[CRASH] uncaughtException:", err);
+  try {
+    await sendAlert("crash_uncaught", `❌ Bot CRASHOU (uncaughtException)\n${err.message}\n\nO Railway vai tentar reiniciar automaticamente.`);
+  } finally {
+    process.exit(1);
+  }
+});
+
+process.on("unhandledRejection", (reason) => {
+  console.error("[CRASH] unhandledRejection:", reason);
+  const msg = reason instanceof Error ? reason.message : String(reason);
+  sendAlert("crash_rejection", `⚠️ Promise não tratada\n${msg}`);
+});
 
 const app = express();
 
@@ -48,4 +64,8 @@ app.listen(PORT, () => {
   console.log(`[server] Running on port ${PORT}`);
   startDailyReport();
   startFollowUp();
+
+  if (process.env.STARTUP_ALERT === "true") {
+    sendAlert("startup", "✅ Bot iniciado com sucesso");
+  }
 });

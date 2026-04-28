@@ -28,21 +28,46 @@ async function sendMessage(to, text) {
     );
   }
 
-  await axios.post(
-    `${BASE_URL}/${phoneId}/messages`,
-    {
-      messaging_product: "whatsapp",
-      to,
-      type: "text",
-      text: { body: text },
-    },
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
+  try {
+    await axios.post(
+      `${BASE_URL}/${phoneId}/messages`,
+      {
+        messaging_product: "whatsapp",
+        to,
+        type: "text",
+        text: { body: text },
       },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+  } catch (err) {
+    const status = err.response?.status;
+    const apiMsg = err.response?.data?.error?.message || err.message;
+
+    // Lazy require pra evitar ciclo whatsapp ↔ alerts
+    if (status === 401) {
+      try {
+        const { sendAlert } = require("./alerts");
+        await sendAlert(
+          "whatsapp_token_expired",
+          `❌ Token WhatsApp INVÁLIDO ou EXPIRADO!\n\nResposta da Meta: ${apiMsg}\n\n*Ação:* Atualize WHATSAPP_TOKEN no Railway.`
+        );
+      } catch {}
+    } else if (status >= 500) {
+      try {
+        const { sendAlert } = require("./alerts");
+        await sendAlert(
+          "whatsapp_api_down",
+          `⚠️ Meta WhatsApp API instável (HTTP ${status})\n${apiMsg}`
+        );
+      } catch {}
     }
-  );
+    throw err;
+  }
 }
 
 module.exports = { sendMessage };

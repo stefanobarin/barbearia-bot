@@ -10,6 +10,7 @@
 const Anthropic = require("@anthropic-ai/sdk");
 const { getHistory, addMessage } = require("./memory");
 const { getFaqContext } = require("./faqMatcher");
+const { sendAlert } = require("./alerts");
 
 const client = new Anthropic.default({
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -138,6 +139,17 @@ async function aiReply(phone, text) {
     return reply;
   } catch (err) {
     console.error("[aiReply] Claude API error:", err.message);
+
+    const status = err.status || err.response?.status;
+    if (status === 401) {
+      sendAlert("ai_auth", `❌ ANTHROPIC_API_KEY inválida.\n\n*Ação:* atualize a chave no Railway.`);
+    } else if (status === 429) {
+      sendAlert("ai_rate_limit", `⚠️ IA atingiu limite de uso (HTTP 429). Cliente recebeu fallback.`);
+    } else if (status >= 500) {
+      sendAlert("ai_down", `⚠️ Anthropic API instável (HTTP ${status}). Cliente recebeu fallback.`);
+    } else {
+      sendAlert("ai_error", `⚠️ Erro na IA: ${err.message}`);
+    }
 
     // Safe fallback — never leave the user hanging
     return "Desculpe, tive um problema técnico. Um atendente humano vai te ajudar em breve!";
