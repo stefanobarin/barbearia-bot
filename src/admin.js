@@ -8,6 +8,7 @@
 //  GET  /admin/cliente/:p   → CRM: histórico por cliente
 // ─────────────────────────────────────────────────────────────
 const express = require("express");
+const crypto = require("crypto");
 const { getAll, todayConversations, weekConversations, byPhone } = require("./conversations");
 const { getAll: getFaqAll, addFaqEntry, removeFaqEntry, updateFaqEntry } = require("./faqMatcher");
 
@@ -27,12 +28,17 @@ router.use((req, res, next) => {
   const [, encoded] = auth.split(" ");
   const decoded = Buffer.from(encoded, "base64").toString();
   const pw = decoded.split(":").slice(1).join(":");
-  if (pw !== password) {
+  const a = Buffer.from(pw);
+  const b = Buffer.from(password);
+  const ok = a.length === b.length && crypto.timingSafeEqual(a, b);
+  if (!ok) {
     res.set("WWW-Authenticate", 'Basic realm="Painel Baronelli"');
     return res.status(401).send("Senha incorreta");
   }
   next();
 });
+
+const MAX_FAQ_LEN = 500;
 
 // ── Helpers ───────────────────────────────────────────────────
 function escapeHtml(s) {
@@ -532,11 +538,11 @@ router.get("/faq", (req, res) => {
       <form method="POST" action="/admin/faq">
         <div class="form-group">
           <label>Pergunta (como o cliente costuma perguntar)</label>
-          <input class="form-input" name="pergunta" placeholder="Ex: vocês aceitam cartão" required>
+          <input class="form-input" name="pergunta" maxlength="500" placeholder="Ex: vocês aceitam cartão" required>
         </div>
         <div class="form-group">
           <label>Resposta do bot</label>
-          <textarea class="form-textarea" name="resposta" placeholder="Ex: Sim! Aceitamos cartão de débito, crédito e Pix. 💳" required></textarea>
+          <textarea class="form-textarea" name="resposta" maxlength="500" placeholder="Ex: Sim! Aceitamos cartão de débito, crédito e Pix. 💳" required></textarea>
         </div>
         <button class="btn-primary" type="submit">Salvar no FAQ</button>
       </form>
@@ -555,11 +561,11 @@ router.get("/faq", (req, res) => {
                 <input type="hidden" name="index" value="${i}">
                 <div class="form-group">
                   <label>Pergunta</label>
-                  <input class="form-input" name="pergunta" value="${escapeHtml(e.pergunta)}" required>
+                  <input class="form-input" name="pergunta" maxlength="500" value="${escapeHtml(e.pergunta)}" required>
                 </div>
                 <div class="form-group">
                   <label>Resposta</label>
-                  <textarea class="form-textarea" name="resposta" required>${escapeHtml(e.resposta)}</textarea>
+                  <textarea class="form-textarea" name="resposta" maxlength="500" required>${escapeHtml(e.resposta)}</textarea>
                 </div>
                 <div style="display:flex;gap:0.5rem;">
                   <button class="btn-primary" type="submit">Salvar alterações</button>
@@ -590,26 +596,28 @@ router.get("/faq", (req, res) => {
 });
 
 // ── FAQ: adicionar ────────────────────────────────────────────
-router.post("/faq", express.urlencoded({ extended: false }), (req, res) => {
-  const { pergunta, resposta } = req.body;
-  if (pergunta && resposta) {
+router.post("/faq", express.urlencoded({ extended: false, limit: "10kb" }), (req, res) => {
+  const pergunta = String(req.body.pergunta || "").slice(0, MAX_FAQ_LEN);
+  const resposta = String(req.body.resposta || "").slice(0, MAX_FAQ_LEN);
+  if (pergunta.trim() && resposta.trim()) {
     addFaqEntry(pergunta, resposta);
   }
   res.redirect("/admin/faq?msg=Entrada adicionada com sucesso!");
 });
 
 // ── FAQ: editar ───────────────────────────────────────────────
-router.post("/faq/update", express.urlencoded({ extended: false }), (req, res) => {
+router.post("/faq/update", express.urlencoded({ extended: false, limit: "10kb" }), (req, res) => {
   const index = parseInt(req.body.index, 10);
-  const { pergunta, resposta } = req.body;
-  if (!isNaN(index) && pergunta && resposta) {
+  const pergunta = String(req.body.pergunta || "").slice(0, MAX_FAQ_LEN);
+  const resposta = String(req.body.resposta || "").slice(0, MAX_FAQ_LEN);
+  if (!isNaN(index) && pergunta.trim() && resposta.trim()) {
     updateFaqEntry(index, pergunta, resposta);
   }
   res.redirect("/admin/faq?msg=Entrada atualizada com sucesso!");
 });
 
 // ── FAQ: remover ──────────────────────────────────────────────
-router.post("/faq/delete", express.urlencoded({ extended: false }), (req, res) => {
+router.post("/faq/delete", express.urlencoded({ extended: false, limit: "1kb" }), (req, res) => {
   const index = parseInt(req.body.index, 10);
   if (!isNaN(index)) {
     removeFaqEntry(index);

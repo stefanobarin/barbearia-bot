@@ -5,6 +5,7 @@
 //  POST /webhook  — Incoming WhatsApp messages
 // ─────────────────────────────────────────────────────────────
 const express = require("express");
+const crypto = require("crypto");
 const router = express.Router();
 
 const { classifyIntent, buildReply } = require("./intentClassifier");
@@ -12,6 +13,31 @@ const { matchFaq } = require("./faqMatcher");
 const { aiReply } = require("./aiReply");
 const { sendMessage } = require("./whatsapp");
 const { addConversation } = require("./conversations");
+
+function maskPhone(p) {
+  if (!p || p.length < 6) return "***";
+  return p.slice(0, 4) + "****" + p.slice(-2);
+}
+
+function truncate(s, n = 80) {
+  if (!s) return "";
+  return s.length > n ? s.slice(0, n) + "…" : s;
+}
+
+function verifySignature(req) {
+  const appSecret = process.env.APP_SECRET;
+  if (!appSecret) return true; // sem secret configurado, libera (transição)
+  const sig = req.headers["x-hub-signature-256"];
+  if (!sig || !req.rawBody) return false;
+  const expected =
+    "sha256=" +
+    crypto.createHmac("sha256", appSecret).update(req.rawBody).digest("hex");
+  try {
+    return crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected));
+  } catch {
+    return false;
+  }
+}
 
 // ── GET: Meta verifies the webhook URL when you register it ──
 router.get("/", (req, res) => {
@@ -30,6 +56,11 @@ router.get("/", (req, res) => {
 
 // ── POST: Real messages arrive here ──────────────────────────
 router.post("/", async (req, res) => {
+  if (!verifySignature(req)) {
+    console.warn("[webhook] Invalid HMAC signature — request rejected");
+    return res.sendStatus(403);
+  }
+
   // Always acknowledge immediately — Meta will retry if we don't reply fast
   res.sendStatus(200);
 
@@ -46,13 +77,13 @@ router.post("/", async (req, res) => {
     const name  = contact?.profile?.name || "Desconhecido";
     const text  = message.text.body.trim();
 
-    console.log(`[webhook] Message from ${phone}: "${text}"`);
+    console.log(`[webhook] Message from ${maskPhone(phone)}: "${truncate(text)}"`);
 
     const { reply, source } = await handleMessage(phone, text);
     await sendMessage(phone, reply);
     addConversation(phone, name, text, reply, source);
 
-    console.log(`[webhook] Replied to ${phone}: "${reply}"`);
+    console.log(`[webhook] Replied to ${maskPhone(phone)} (${source})`);
 
     // Escalação: cliente pediu atendente humano → avisa a barbearia
     if (source === "human" && process.env.BARBERSHOP_PHONE) {
