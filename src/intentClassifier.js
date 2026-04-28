@@ -43,44 +43,52 @@ const INTENTS = {
 
 // ── Predefined replies ────────────────────────────────────────
 const REPLIES = {
-  greeting: "Olá! 👋 Bem-vindo à Barbearia! Como posso te ajudar hoje?",
+  greeting: "Olá! 👋 Bem-vindo à *Barbearia Baronelli*! Em que posso te ajudar?",
 
   prices:
-    "Nossos preços:\n\n" +
-    "✂️  Corte: R$45\n" +
-    "🪒  Barba: R$35\n" +
-    "💈  Combo (corte + barba): R$70\n\n" +
-    "Quer agendar? É só pedir!",
+    "*Nossa tabela:* 💈\n\n" +
+    "✂️ Corte — R$55\n" +
+    "🪒 Barba — R$50\n" +
+    "💈 Combo (corte + barba) — R$105\n" +
+    "🪒 Sobrancelha — R$25\n" +
+    "💧 Hidratação — R$60\n" +
+    "👃 Higienização nasal — R$30\n\n" +
+    "Também temos planos mensais com cortes ilimitados! Quer saber mais? 😉",
 
   services:
-    "Nossos serviços:\n\n" +
-    "✂️  Corte masculino\n" +
-    "🪒  Barba (navalha ou aparar)\n" +
-    "✨  Acabamento\n" +
-    "💈  Combo completo\n\n" +
-    "Qual te interessa?",
+    "*Nossos serviços:*\n\n" +
+    "✂️ Corte masculino\n" +
+    "🪒 Barba (navalha ou aparar)\n" +
+    "💧 Hidratação capilar\n" +
+    "👃 Higienização nasal\n" +
+    "🪒 Design de sobrancelha\n" +
+    "💈 Combo completo (corte + barba)\n\n" +
+    "Qual te interessa? 😊",
 
   hours:
-    "Nosso horário de atendimento:\n\n" +
-    "📅  Seg – Sex: 9h às 20h\n" +
-    "📅  Sábado: 9h às 18h\n" +
-    "❌  Domingo: fechado\n\n" +
-    "Quer marcar um horário?",
+    "*Nosso horário:* 🕐\n\n" +
+    "📅 Seg a Qui: 10h às 20h20\n" +
+    "📅 Sexta: 9h às 20h20\n" +
+    "📅 Sábado: 9h às 17h30\n" +
+    "📅 Domingo: 9h às 13h30\n" +
+    "❌ Feriados: fechado\n\n" +
+    "Quer agendar? 😉",
 
   location:
-    "📍 Estamos no centro da cidade.\n" +
-    "Manda mensagem para confirmar o endereço exato com um de nossos atendentes!",
+    "📍 *Estamos em:*\n\n" +
+    "Rua Luiz Otávio, 2625\n" +
+    "Fazenda Santa Cândida, Campinas/SP\n\n" +
+    "🚗 Estacionamento gratuito ao lado e na galeria. Te esperamos!",
 
   booking:
-    `Para agendar seu horário, acesse o link abaixo:\n\n` +
-    `📲 ${process.env.BOOKING_LINK || "https://link-do-app"}\n\n` +
-    "É rápido e fácil! Qualquer dúvida, é só perguntar 😊",
+    `Bora marcar! 📲\n\n` +
+    `Acessa aqui: ${process.env.BOOKING_LINK || "https://cashbarber.com.br/baronelli/inicio"}\n\n` +
+    "Escolhe o barbeiro, dia e horário. Qualquer dúvida é só chamar! 😊",
 
   human:
-    "Entendido! Para falar diretamente com a Barbearia Baronelli, chame pelo WhatsApp:\n\n" +
+    "Beleza, vou te passar o contato direto da barbearia! 🙏\n\n" +
     "📱 *(19) 99855-0168*\n\n" +
-    "Nosso horário de atendimento:\n" +
-    "📅 Seg–Sex: 9h às 20h · Sáb: 9h às 18h 🙏",
+    "Horário: Seg a Qui 10h–20h20, Sexta 9h–20h20, Sábado 9h–17h30, Domingo 9h–13h30",
 };
 
 // ── Classifier ────────────────────────────────────────────────
