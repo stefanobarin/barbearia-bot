@@ -10,16 +10,19 @@
 const path = require("path");
 const fs   = require("fs");
 
-// Carrega o FAQ do disco uma vez ao iniciar (sem custo de I/O repetido)
+const faqPath = path.join(__dirname, "..", "faq.json");
 let faqEntries = [];
 
-try {
-  const faqPath = path.join(__dirname, "..", "faq.json");
-  faqEntries = JSON.parse(fs.readFileSync(faqPath, "utf-8"));
-  console.log(`[faq] ${faqEntries.length} entradas carregadas.`);
-} catch (err) {
-  console.warn("[faq] Não foi possível carregar faq.json:", err.message);
+function loadFaq() {
+  try {
+    faqEntries = JSON.parse(fs.readFileSync(faqPath, "utf-8"));
+    console.log(`[faq] ${faqEntries.length} entradas carregadas.`);
+  } catch (err) {
+    console.warn("[faq] Não foi possível carregar faq.json:", err.message);
+  }
 }
+
+loadFaq();
 
 /**
  * Verifica se a mensagem do cliente contém palavras de alguma pergunta do FAQ.
@@ -69,4 +72,18 @@ function getFaqContext() {
   return `\nPERGUNTAS FREQUENTES DA BARBEARIA:\n${lines}`;
 }
 
-module.exports = { matchFaq, getFaqContext };
+function getAll() {
+  return faqEntries;
+}
+
+function addFaqEntry(pergunta, resposta) {
+  faqEntries.push({ pergunta: pergunta.trim(), resposta: resposta.trim() });
+  fs.writeFileSync(faqPath, JSON.stringify(faqEntries, null, 2));
+}
+
+function removeFaqEntry(index) {
+  faqEntries.splice(index, 1);
+  fs.writeFileSync(faqPath, JSON.stringify(faqEntries, null, 2));
+}
+
+module.exports = { matchFaq, getFaqContext, getAll, addFaqEntry, removeFaqEntry };

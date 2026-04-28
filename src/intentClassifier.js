@@ -77,7 +77,10 @@ const REPLIES = {
     "É rápido e fácil! Qualquer dúvida, é só perguntar 😊",
 
   human:
-    "Entendido! Vou chamar um atendente humano agora. Aguarde um momento! 🙏",
+    "Entendido! Para falar diretamente com a Barbearia Baronelli, chame pelo WhatsApp:\n\n" +
+    "📱 *(19) 99855-0168*\n\n" +
+    "Nosso horário de atendimento:\n" +
+    "📅 Seg–Sex: 9h às 20h · Sáb: 9h às 18h 🙏",
 };
 
 // ── Classifier ────────────────────────────────────────────────

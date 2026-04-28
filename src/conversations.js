@@ -48,8 +48,20 @@ function todayConversations() {
   });
 }
 
+function weekConversations() {
+  const now = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+  const startOfWeek = new Date(now);
+  startOfWeek.setDate(now.getDate() - now.getDay());
+  startOfWeek.setHours(0, 0, 0, 0);
+  return load().filter((e) => new Date(e.timestamp) >= startOfWeek);
+}
+
+function byPhone(phone) {
+  return load().filter((e) => e.phone === phone);
+}
+
 function getAll() {
   return load();
 }
 
-module.exports = { addConversation, todayConversations, getAll };
+module.exports = { addConversation, todayConversations, weekConversations, byPhone, getAll };
