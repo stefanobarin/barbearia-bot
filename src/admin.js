@@ -81,6 +81,8 @@ const CSS = `
     background: #f1f5f9;
     color: #0f172a;
     min-height: 100vh;
+    display: flex;
+    flex-direction: column;
   }
   a { color: #2563eb; text-decoration: none; }
   a:hover { text-decoration: underline; }
@@ -124,7 +126,7 @@ const CSS = `
   .nav-btn.active { background: #2563eb; color: #fff; }
 
   /* Main */
-  .main { max-width: 1080px; margin: 0 auto; padding: 1.8rem 1.5rem; }
+  .main { max-width: 1080px; margin: 0 auto; padding: 1.8rem 1.5rem; flex: 1; width: 100%; }
 
   /* Stats cards */
   .stats-grid {
