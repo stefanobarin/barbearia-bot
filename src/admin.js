@@ -358,6 +358,18 @@ const CSS = `
     font-weight: 500;
   }
 
+  /* Footer */
+  .footer {
+    text-align: center;
+    padding: 2rem 1.5rem 1.5rem;
+    color: #94a3b8;
+    font-size: 0.75rem;
+    border-top: 1px solid #e2e8f0;
+    margin-top: 2rem;
+  }
+  .footer a { color: #64748b; }
+  .footer a:hover { color: #2563eb; }
+
   /* CRM cliente */
   .back-link { display: inline-flex; align-items: center; gap: 0.4rem; color: #64748b; font-size: 0.85rem; margin-bottom: 1.2rem; }
   .back-link:hover { color: #2563eb; }
@@ -554,6 +566,10 @@ router.get("/", (req, res) => {
         .catch(() => {});
     }, 60000);
   </script>
+
+  <footer class="footer">
+    © ${new Date().getFullYear()} Barbearia Baronelli · Todos os direitos reservados · Criado por <a href="mailto:stefanobarin@gmail.com">Stefano Barin</a>
+  </footer>
 </body>
 </html>`;
 
@@ -651,6 +667,10 @@ router.get("/faq", (req, res) => {
           </div>`;
         }).join("")}
   </main>
+
+  <footer class="footer">
+    © ${new Date().getFullYear()} Barbearia Baronelli · Todos os direitos reservados · Criado por <a href="mailto:stefanobarin@gmail.com">Stefano Barin</a>
+  </footer>
 </body>
 </html>`;
 
@@ -774,6 +794,10 @@ router.get("/cliente/:phone", (req, res) => {
       </div>
     `).join("")}
   </main>
+
+  <footer class="footer">
+    © ${new Date().getFullYear()} Barbearia Baronelli · Todos os direitos reservados · Criado por <a href="mailto:stefanobarin@gmail.com">Stefano Barin</a>
+  </footer>
 </body>
 </html>`;
 
