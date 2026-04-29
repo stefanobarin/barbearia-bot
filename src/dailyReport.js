@@ -13,7 +13,7 @@ function buildReport() {
   const total = today.length;
   const uniqueClients = new Set(today.map((c) => c.phone)).size;
   const escalations = today.filter((c) => c.source === "human").length;
-  const aiAnswers = today.filter((c) => c.source === "ai").length;
+  const aiAnswers = today.filter((c) => c.source === "ai" || c.source === "ai_vision").length;
   const bookings = today.filter((c) => c.source === "booking").length;
   const prices = today.filter((c) => c.source === "prices").length;
 
