@@ -391,7 +391,8 @@ router.get("/", (req, res) => {
   // Métricas
   const uniquePhones = new Set(sorted.map((c) => c.phone)).size;
   const humanCount = sorted.filter((c) => c.source === "human").length;
-  const aiCount = sorted.filter((c) => c.source === "ai").length;
+  const aiCount = sorted.filter((c) => c.source === "ai" || c.source === "ai_vision").length;
+  const escRate = sorted.length > 0 ? Math.round((humanCount / sorted.length) * 100) : 0;
   const period = filter === "today" ? "hoje" : filter === "week" ? "esta semana" : "no total";
 
   const html = `<!DOCTYPE html>
@@ -399,7 +400,6 @@ router.get("/", (req, res) => {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="refresh" content="60">
   <title>Painel — Barbearia Baronelli</title>
   <style>${CSS}</style>
 </head>
@@ -432,7 +432,7 @@ router.get("/", (req, res) => {
       <div class="stat-card">
         <span class="icon">🆘</span>
         <span class="value">${humanCount}</span>
-        <span class="label">Escalações humanas</span>
+        <span class="label">Escalações humanas${sorted.length > 0 ? ` (${escRate}%)` : ""}</span>
       </div>
       <div class="stat-card">
         <span class="icon">🤖</span>
@@ -474,6 +474,7 @@ router.get("/", (req, res) => {
           <div class="conv-meta">
             <a class="name phone-link" href="/admin/cliente/${escapeHtml(c.phone)}">${escapeHtml(c.name)}</a>
             <a class="phone-link" href="/admin/cliente/${escapeHtml(c.phone)}">+${escapeHtml(c.phone)}</a>
+            <a class="phone-link" href="https://wa.me/${escapeHtml(c.phone)}" target="_blank" title="Abrir WhatsApp">💬</a>
             <span class="badge ${escapeHtml(c.source || "")}">${sourceLabel(c.source)}</span>
             <span class="time">${formatDate(c.timestamp)}</span>
           </div>
@@ -493,15 +494,65 @@ router.get("/", (req, res) => {
   </main>
 
   <script>
+    const PAGE_SIZE = 50;
+    let currentPage = 0;
+    const cards = Array.from(document.querySelectorAll('.conv-card'));
+
     function applyFilter() {
       const src = document.getElementById('sourceFilter').value;
       const q = document.getElementById('searchInput').value.toLowerCase();
-      document.querySelectorAll('.conv-card').forEach(el => {
+      currentPage = 0;
+      const visible = cards.filter(el => {
         const matchSrc = !src || el.dataset.source === src;
         const matchQ = !q || el.dataset.search.includes(q);
-        el.style.display = matchSrc && matchQ ? '' : 'none';
+        return matchSrc && matchQ;
       });
+      cards.forEach(el => el.style.display = 'none');
+      visible.forEach((el, i) => { el.style.display = i < PAGE_SIZE ? '' : 'none'; });
+      renderPager(visible);
     }
+
+    function renderPager(visible) {
+      const old = document.getElementById('pager');
+      if (old) old.remove();
+      if (visible.length <= PAGE_SIZE) return;
+      const pages = Math.ceil(visible.length / PAGE_SIZE);
+      const pager = document.createElement('div');
+      pager.id = 'pager';
+      pager.style.cssText = 'display:flex;gap:0.4rem;justify-content:center;margin-top:1rem;';
+      for (let i = 0; i < pages; i++) {
+        const btn = document.createElement('button');
+        btn.textContent = i + 1;
+        btn.className = 'filter-btn' + (i === currentPage ? ' active' : '');
+        btn.onclick = () => {
+          currentPage = i;
+          visible.forEach((el, j) => { el.style.display = (j >= i*PAGE_SIZE && j < (i+1)*PAGE_SIZE) ? '' : 'none'; });
+          pager.querySelectorAll('button').forEach((b, bi) => b.className = 'filter-btn' + (bi === i ? ' active' : ''));
+          window.scrollTo(0, 0);
+        };
+        pager.appendChild(btn);
+      }
+      document.getElementById('convList').after(pager);
+    }
+
+    applyFilter();
+
+    // Auto-refresh sem perder scroll
+    setInterval(() => {
+      const scroll = window.scrollY;
+      fetch(location.href)
+        .then(r => r.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(html, 'text/html');
+          // Atualiza só os cards e stats
+          document.querySelector('.stats-grid').innerHTML = doc.querySelector('.stats-grid').innerHTML;
+          document.getElementById('convList').innerHTML = doc.getElementById('convList').innerHTML;
+          applyFilter();
+          window.scrollTo(0, scroll);
+        })
+        .catch(() => {});
+    }, 60000);
   </script>
 </body>
 </html>`;
@@ -693,7 +744,7 @@ router.get("/cliente/:phone", (req, res) => {
   <main class="main">
     <div class="client-header">
       <div class="cname">${escapeHtml(name)}</div>
-      <div class="cphone">+${escapeHtml(phone)}</div>
+      <div class="cphone">+${escapeHtml(phone)} &nbsp;<a href="https://wa.me/${escapeHtml(phone)}" target="_blank" style="font-size:0.85rem;">💬 Abrir WhatsApp</a></div>
       <div class="client-stats">
         <div class="cs">Mensagens: <span>${sorted.length}</span></div>
         <div class="cs">Escalações: <span>${humanEsc}</span></div>
