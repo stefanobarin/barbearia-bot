@@ -14,6 +14,7 @@ const { aiReply } = require("./aiReply");
 const { sendMessage } = require("./whatsapp");
 const { addConversation } = require("./conversations");
 const { sendAlert } = require("./alerts");
+const { downloadWhatsAppMedia } = require("./media");
 
 function maskPhone(p) {
   if (!p || p.length < 6) return "***";
@@ -72,17 +73,52 @@ router.post("/", async (req, res) => {
     const contact = change?.contacts?.[0];
 
     if (!message) return;
-    if (message.type !== "text") return;
 
     const phone = message.from;
     const name  = contact?.profile?.name || "Desconhecido";
-    const text  = message.text.body.trim();
 
-    console.log(`[webhook] Message from ${maskPhone(phone)}: "${truncate(text)}"`);
+    // ── Tipos suportados: text, image ──────────────────────────
+    let text = "";
+    let image = null;
 
-    const { reply, source } = await handleMessage(phone, text);
+    if (message.type === "text") {
+      text = message.text.body.trim();
+    } else if (message.type === "image") {
+      // Cliente mandou imagem — baixa e processa via Claude Vision
+      const mediaId = message.image?.id;
+      const caption = message.image?.caption?.trim() || "";
+
+      if (!mediaId) {
+        console.warn(`[webhook] Imagem sem ID — ignorando`);
+        return;
+      }
+
+      try {
+        console.log(`[webhook] Baixando imagem de ${maskPhone(phone)}...`);
+        image = await downloadWhatsAppMedia(mediaId);
+        text = caption; // legenda da imagem (pode ser vazia)
+        console.log(`[webhook] Imagem baixada (${image.mimeType}, ${(image.data.length * 0.75 / 1024).toFixed(0)}KB)`);
+      } catch (err) {
+        console.error(`[webhook] Falha ao baixar imagem:`, err.message);
+        await sendMessage(phone, "Ops, não consegui baixar sua imagem 😬 Manda de novo ou descreve em texto?");
+        return;
+      }
+    } else {
+      // Tipos não suportados (audio, video, document, sticker, location)
+      console.log(`[webhook] Tipo não suportado: ${message.type}`);
+      await sendMessage(phone,
+        "Oi! Aqui só processo *texto* e *imagens* 📸\n\n" +
+        "Se preferir falar com atendente humano, é só mandar 'atendente'."
+      );
+      return;
+    }
+
+    const logPreview = image ? `[imagem] ${truncate(text) || "(sem legenda)"}` : truncate(text);
+    console.log(`[webhook] Message from ${maskPhone(phone)}: "${logPreview}"`);
+
+    const { reply, source } = await handleMessage(phone, text, image);
     await sendMessage(phone, reply);
-    addConversation(phone, name, text, reply, source);
+    addConversation(phone, name, image ? `[imagem] ${text || "(sem legenda)"}` : text, reply, source);
 
     console.log(`[webhook] Replied to ${maskPhone(phone)} (${source})`);
 
@@ -108,7 +144,14 @@ router.post("/", async (req, res) => {
 });
 
 // ── Core message-handling logic ───────────────────────────────
-async function handleMessage(phone, text) {
+async function handleMessage(phone, text, image = null) {
+  // Se tem imagem, vai DIRETO pra IA (vision) — pula intent/FAQ
+  if (image) {
+    const aiAnswer = await aiReply(phone, text, image);
+    return { reply: aiAnswer, source: "ai_vision" };
+  }
+
+  // Sem imagem: pipeline normal (intent → FAQ → IA)
   const intent = classifyIntent(text);
   if (intent) return { reply: buildReply(intent), source: intent };
 

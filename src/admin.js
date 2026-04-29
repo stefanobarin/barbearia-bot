@@ -60,6 +60,7 @@ function sourceLabel(s) {
   const map = {
     human: "👤 Humano",
     ai: "🤖 IA",
+    ai_vision: "📸 IA + Imagem",
     faq: "📋 FAQ",
     booking: "📅 Agendamento",
     prices: "💰 Preços",
@@ -234,6 +235,7 @@ const CSS = `
   }
   .badge.human { background: #fee2e2; color: #b91c1c; }
   .badge.ai { background: #dbeafe; color: #1d4ed8; }
+  .badge.ai_vision { background: #ecfeff; color: #0e7490; }
   .badge.faq { background: #dcfce7; color: #15803d; }
   .badge.booking { background: #ede9fe; color: #6d28d9; }
   .badge.prices { background: #ffedd5; color: #c2410c; }
