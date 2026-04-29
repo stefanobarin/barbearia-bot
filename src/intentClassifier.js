@@ -11,33 +11,78 @@ const INTENTS = {
   greeting: [
     "oi", "olá", "ola", "bom dia", "boa tarde", "boa noite",
     "hey", "hello", "eai", "e aí", "tudo bem", "tudo bom",
+    "oie", "oii", "oiee", "opa", "salve", "fala", "blz", "blza",
   ],
   prices: [
     "preço", "preco", "valor", "quanto", "custa", "tabela",
     "preços", "precos", "lista de preço", "lista de preco",
+    "qual o preço", "qual é o preço", "quanto sai", "quanto fica",
+    "qual valor", "table de preço", "table de preco", "promoção", "promocao",
   ],
   services: [
     "serviço", "servico", "serviços", "servicos",
     "o que faz", "que serviço", "que tipo", "o que vocês fazem",
-    "o que voces fazem", "fazem o que",
+    "o que voces fazem", "fazem o que", "qual é o serviço",
+    "que tipos de corte", "que tipos de barba", "oferece",
   ],
   hours: [
     "horário", "horario", "hora", "abre", "fecha", "funciona",
     "atende", "expediente", "aberto", "fechado", "quando abre",
+    "qual o horário", "qual o horario", "até que horas", "a que horas",
+    "de segunda", "de seg", "de sexta", "sabado", "sábado", "domingo",
   ],
   location: [
     "endereço", "endereco", "onde", "localização", "localizacao",
     "fica", "bairro", "rua", "como chegar", "chegar",
+    "qual o endereço", "qual o endereco", "localizado", "localizado onde",
+    "qual a rua", "qual é a rua", "mapa", "gps", "perto",
   ],
   booking: [
     "agendar", "agendamento", "marcar", "reservar", "horário livre",
     "horario livre", "vaga", "disponível", "disponivel", "agenda",
-    "quero cortar", "quero marcar",
+    "quero cortar", "quero marcar", "quanto custa", "como agendar",
+    "como marcar", "agendar um corte", "marcar um horario", "marcar um horário",
+    "qual o link", "como agendar online", "agora", "urgente",
   ],
   human: [
-    "atendente", "humano", "pessoa", "falar com alguém",
-    "falar com alguem", "gerente", "responsável", "responsavel",
-    "quero falar", "me ajuda", "ninguém me ajuda",
+    // ────────────────────────────────────────────────────────
+    // REDUNDÂNCIA ABSOLUTA: capturar TODA variação de "quero falar com humano"
+    // Simples: uma palavra isolada ou no meio da frase
+    "atendente", "atendentes",
+    "humano", "humana", "humanidade",
+    "pessoa", "pessoal", "pessoas",
+
+    // Variações com "falar com"
+    "falar com alguém", "falar com alguem", "falar com pessoa",
+    "falar com humano", "falar com atendente", "falar com gerente",
+    "falar com responsavel", "falar com responsável",
+
+    // Variações com "quero"
+    "quero falar", "quero atendimento", "quero pessoal",
+    "quero humano", "quero atender", "quero ser atendido",
+    "quero ser atendida", "quero uma pessoa",
+
+    // Variações com "preciso"
+    "preciso de atendente", "preciso de humano", "preciso de pessoa",
+    "preciso falar", "preciso atender",
+
+    // Variações com negação/frustração (cliente quer desistir do bot)
+    "ninguém me ajuda", "ninguem me ajuda", "não me ajuda", "nao me ajuda",
+    "não tá funcionando", "nao ta funcionando", "não funciona",
+    "tá errado", "ta errado", "erro", "problma", "problema",
+    "não entendi", "nao entendi", "não entendo", "nao entendo",
+
+    // Gerente/suporte
+    "gerente", "supervisor", "responsável", "responsavel",
+    "suporte", "support", "help", "ajuda",
+
+    // Direto ao ponto
+    "me ajuda", "me ajude", "ajuda aí", "ajuda ai",
+    "vcs", "vocês", "can you help", "pode me ajudar",
+
+    // Escalação explícita
+    "escalação", "escalacao", "escalar", "elevar",
+    "falar com o dono", "falar com dono", "falar com chefe",
   ],
 };
 
@@ -97,13 +142,30 @@ const REPLIES = {
  * Returns an intent key if any keyword matches the message,
  * or null if the AI fallback should handle it.
  *
+ * Prioriza "human" (atendente) porque cliente quer sair do bot.
+ * Detecta isoladamente: "atendente", "humano", "ajuda", "pessoa".
+ *
  * @param {string} text
  * @returns {string|null}
  */
 function classifyIntent(text) {
   const normalized = text.toLowerCase().trim();
+  const words = normalized.split(/\s+/);
 
+  // ── Prioridade 1: "human" — cliente quer falar com humano ──────
+  // Se encontra qualquer keyword de "human", RETORNA IMEDIATAMENTE
+  // (não deixa outro intent como "greeting" + "atendente" ganhar)
+  for (const keyword of INTENTS.human) {
+    if (normalized.includes(keyword)) {
+      return "human";
+    }
+  }
+
+  // ── Prioridade 2: outras intents (em ordem) ──────────────────
+  // Mas NÃO "human" pois já foi checado acima
   for (const [intent, keywords] of Object.entries(INTENTS)) {
+    if (intent === "human") continue; // já processado
+
     for (const keyword of keywords) {
       if (normalized.includes(keyword)) {
         return intent;
