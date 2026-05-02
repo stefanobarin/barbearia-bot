@@ -7,6 +7,7 @@
 const cron = require("node-cron");
 const { todayConversations } = require("./conversations");
 const { sendMessage } = require("./whatsapp");
+const { getStats: getTokenStats, formatTokens } = require("./tokenTracker");
 
 function buildReport() {
   const today = todayConversations().filter((c) => c.source !== "followup");
@@ -21,8 +22,13 @@ function buildReport() {
     timeZone: "America/Sao_Paulo",
   });
 
+  const tokens = getTokenStats();
+  const tokenLine = tokens.today.total > 0
+    ? `\n🧠 ${formatTokens(tokens.today.total)} tokens · $${tokens.today.costUSD.toFixed(3)}`
+    : "";
+
   if (total === 0) {
-    return `📊 *Resumo do bot — ${date}*\n\nNenhuma conversa hoje.`;
+    return `📊 *Resumo do bot — ${date}*\n\nNenhuma conversa hoje.${tokenLine}`;
   }
 
   return (
@@ -32,7 +38,8 @@ function buildReport() {
     `💰 ${prices} perguntaram preço\n` +
     `📅 ${bookings} pediram agendamento\n` +
     `🤖 ${aiAnswers} respondidas pela IA\n` +
-    `🆘 ${escalations} pediram atendente humano`
+    `🆘 ${escalations} pediram atendente humano` +
+    tokenLine
   );
 }
 

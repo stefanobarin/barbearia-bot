@@ -13,6 +13,7 @@ const { getAll, todayConversations, weekConversations, byPhone } = require("./co
 const { getAll: getFaqAll, addFaqEntry, removeFaqEntry, updateFaqEntry, resetFaqFromSeed } = require("./faqMatcher");
 const { sendAlert } = require("./alerts");
 const { getDiskStats, getConvFileSizeMB } = require("./diskMonitor");
+const { getStats: getTokenStats, formatTokens } = require("./tokenTracker");
 
 const router = express.Router();
 
@@ -167,6 +168,9 @@ const CSS = `
   .stat-card.green::before { background: linear-gradient(90deg, #16a34a, #4ade80); }
   .stat-card.red::before { background: linear-gradient(90deg, #dc2626, #f87171); }
   .stat-card.purple::before { background: linear-gradient(90deg, #7c3aed, #a78bfa); }
+  .stat-card.orange::before { background: linear-gradient(90deg, #ea580c, #fb923c); }
+  .stat-card.teal::before { background: linear-gradient(90deg, #0d9488, #2dd4bf); }
+  .stat-card.yellow::before { background: linear-gradient(90deg, #ca8a04, #facc15); }
   .stat-icon {
     width: 44px; height: 44px;
     border-radius: 12px;
@@ -178,6 +182,10 @@ const CSS = `
   .stat-icon.green { background: #f0fdf4; }
   .stat-icon.red { background: #fef2f2; }
   .stat-icon.purple { background: #faf5ff; }
+  .stat-icon.orange { background: #fff7ed; }
+  .stat-icon.teal { background: #f0fdfa; }
+  .stat-icon.yellow { background: #fefce8; }
+  .stat-sublabel { font-size: 0.68rem; color: #94a3b8; margin-top: 2px; font-weight: 500; }
   .stat-body { display: flex; flex-direction: column; gap: 0.2rem; }
   .stat-card .value { font-size: 2.1rem; font-weight: 800; color: #0f172a; line-height: 1; letter-spacing: -1.5px; }
   .stat-card .label { font-size: 0.7rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.6px; font-weight: 600; }
@@ -479,25 +487,25 @@ router.get("/", (req, res) => {
   else if (filter === "all") base = getAll();
   else base = todayConversations();
 
-  const disk = getDiskStats();
+  const disk      = getDiskStats();
   const convSizeMB = getConvFileSizeMB();
-  const diskBanner = (() => {
-    if (!disk) return "";
-    const pct = parseFloat(disk.freePct);
-    if (pct < 10) {
-      return `<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:0.7rem 1rem;margin-bottom:1rem;color:#dc2626;font-size:0.85rem;font-weight:600;display:flex;gap:0.5rem;align-items:center;">
-        ⚠️ Disco quase cheio — ${disk.freeMB}MB livres (${disk.freePct}%). Limpe conversas antigas ou aumente o volume no Railway.
-      </div>`;
-    }
-    if (pct < 20) {
-      return `<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:0.7rem 1rem;margin-bottom:1rem;color:#92400e;font-size:0.85rem;font-weight:600;display:flex;gap:0.5rem;align-items:center;">
-        ⚡ Disco com ${disk.freeMB}MB livres (${disk.freePct}%). Fique de olho.
-      </div>`;
-    }
-    return `<div style="background:#f0fdf4;border:1px solid #86efac;border-radius:10px;padding:0.5rem 1rem;margin-bottom:1rem;color:#15803d;font-size:0.8rem;display:flex;gap:0.5rem;align-items:center;">
-      ✅ Disco OK — ${disk.freeMB}MB livres · conversas.json ${convSizeMB.toFixed(1)}MB
-    </div>`;
-  })();
+  const tokens    = getTokenStats();
+
+  // Disk card config
+  const diskColor = !disk ? "green"
+    : parseFloat(disk.freePct) < 10 ? "red"
+    : parseFloat(disk.freePct) < 25 ? "yellow"
+    : "green";
+
+  function formatDiskSize(mb) {
+    if (!mb) return "—";
+    const n = parseFloat(mb);
+    if (n >= 1024) return (n / 1024).toFixed(1) + " GB";
+    return n + " MB";
+  }
+
+  const diskValue = disk ? formatDiskSize(disk.freeMB) : "N/A";
+  const diskSub   = disk ? `${disk.freePct}% livre · ${convSizeMB.toFixed(1)}MB usado` : "indisponível";
 
   const sorted = [...base].reverse();
 
@@ -531,7 +539,6 @@ router.get("/", (req, res) => {
   </header>
 
   <main class="main">
-    ${diskBanner}
     <!-- Cards de métricas -->
     <div class="stats-grid">
       <div class="stat-card blue" style="cursor:default">
@@ -560,6 +567,22 @@ router.get("/", (req, res) => {
         <div class="stat-body">
           <span class="value">${aiCount}</span>
           <span class="label">Respostas por IA ↗</span>
+        </div>
+      </div>
+      <div class="stat-card teal">
+        <div class="stat-icon teal">🧠</div>
+        <div class="stat-body">
+          <span class="value">${formatTokens(tokens.today.total) || "0"}</span>
+          <span class="label">Tokens hoje</span>
+          <span class="stat-sublabel">$${tokens.today.costUSD.toFixed(3)} · total: ${formatTokens(tokens.allTime.total)}</span>
+        </div>
+      </div>
+      <div class="stat-card ${diskColor}">
+        <div class="stat-icon ${diskColor}">💾</div>
+        <div class="stat-body">
+          <span class="value">${diskValue}</span>
+          <span class="label">Disco livre</span>
+          <span class="stat-sublabel">${diskSub}</span>
         </div>
       </div>
     </div>

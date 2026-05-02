@@ -11,6 +11,7 @@ const Anthropic = require("@anthropic-ai/sdk");
 const { getHistory, addMessage } = require("./memory");
 const { getFaqContext } = require("./faqMatcher");
 const { sendAlert } = require("./alerts");
+const { logUsage } = require("./tokenTracker");
 
 const client = new Anthropic.default({
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -495,6 +496,8 @@ async function aiReply(phone, text, image = null) {
     ]);
 
     const reply = response.content[0].text.trim();
+
+    logUsage(response.usage.input_tokens, response.usage.output_tokens);
 
     // Save the assistant turn so the next message has context
     addMessage(phone, "assistant", reply);
