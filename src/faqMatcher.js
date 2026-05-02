@@ -14,6 +14,7 @@ const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, "..");
 const faqPath = path.join(DATA_DIR, "faq.json");
 const seedPath = path.join(__dirname, "..", "faq.json");
 let faqEntries = [];
+let tokenizedFaq = []; // pre-computed per entry to avoid re-tokenizing on every message
 
 function loadFaq() {
   try {
@@ -22,6 +23,7 @@ function loadFaq() {
       fs.copyFileSync(seedPath, faqPath);
     }
     faqEntries = JSON.parse(fs.readFileSync(faqPath, "utf-8"));
+    rebuildTokenized();
     console.log(`[faq] ${faqEntries.length} entradas carregadas de ${faqPath}`);
   } catch (err) {
     console.warn("[faq] Não foi possível carregar faq.json:", err.message);
@@ -54,9 +56,16 @@ function tokenize(str) {
     .filter((w) => w.length >= 3 && !STOPWORDS.has(w));
 }
 
+function rebuildTokenized() {
+  tokenizedFaq = faqEntries.map((e) => ({
+    norm: norm(e.pergunta),
+    tokens: tokenize(e.pergunta),
+  }));
+}
+
 /**
  * Verifica se a mensagem do cliente combina com alguma pergunta do FAQ.
- * Usa score ≥ 60%: 60% das palavras-chave devem aparecer (não 100%).
+ * Usa score ≥ 50%: metade das palavras-chave devem aparecer.
  * Normaliza acentos: "horário" bate com "horario".
  *
  * @param {string} text - mensagem do cliente
@@ -69,17 +78,16 @@ function matchFaq(text) {
   let bestScore = 0;
   let bestEntry = null;
 
-  for (const entry of faqEntries) {
-    const faqNorm = norm(entry.pergunta);
+  for (let i = 0; i < faqEntries.length; i++) {
+    const { norm: faqNorm, tokens: faqTokens } = tokenizedFaq[i];
 
     // Frase exata → score máximo, para imediatamente
     if (msgNorm.includes(faqNorm)) {
-      bestEntry = entry;
+      bestEntry = faqEntries[i];
       bestScore = 1;
       break;
     }
 
-    const faqTokens = tokenize(entry.pergunta);
     if (faqTokens.length === 0) continue;
 
     const matched = faqTokens.filter((kw) =>
@@ -93,7 +101,7 @@ function matchFaq(text) {
 
     if (score > bestScore) {
       bestScore = score;
-      bestEntry = entry;
+      bestEntry = faqEntries[i];
     }
   }
 
@@ -106,7 +114,6 @@ function matchFaq(text) {
 
 /**
  * Retorna todas as entradas do FAQ como texto para injetar no prompt do Claude.
- * Assim o Claude também conhece o FAQ para perguntas parecidas.
  *
  * @returns {string}
  */
@@ -126,17 +133,20 @@ function getAll() {
 
 function addFaqEntry(pergunta, resposta) {
   faqEntries.push({ pergunta: pergunta.trim(), resposta: resposta.trim() });
+  rebuildTokenized();
   fs.writeFileSync(faqPath, JSON.stringify(faqEntries, null, 2));
 }
 
 function removeFaqEntry(index) {
   faqEntries.splice(index, 1);
+  rebuildTokenized();
   fs.writeFileSync(faqPath, JSON.stringify(faqEntries, null, 2));
 }
 
 function updateFaqEntry(index, pergunta, resposta) {
   if (index < 0 || index >= faqEntries.length) return;
   faqEntries[index] = { pergunta: pergunta.trim(), resposta: resposta.trim() };
+  rebuildTokenized();
   fs.writeFileSync(faqPath, JSON.stringify(faqEntries, null, 2));
 }
 

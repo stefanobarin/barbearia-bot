@@ -16,6 +16,7 @@ const path = require("path");
 const cron = require("node-cron");
 const { getAll, addConversation } = require("./conversations");
 const { sendMessage } = require("./whatsapp");
+const { maskPhone } = require("./utils");
 
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, "..");
 const STATE_FILE = path.join(DATA_DIR, "followups.json");
@@ -59,17 +60,11 @@ function buildMessage(lastSource, name) {
   return `${greeting} 👋 Tá precisando de mais alguma coisa? Tô por aqui se quiser tirar qualquer dúvida.`;
 }
 
-function maskPhone(p) {
-  if (!p || p.length < 6) return "***";
-  return p.slice(0, 4) + "****" + p.slice(-2);
-}
-
 async function checkInactiveClients() {
   const state = loadState();
   const all = getAll();
   if (all.length === 0) return;
 
-  // Última mensagem por telefone
   const lastByPhone = new Map();
   for (const c of all) {
     const existing = lastByPhone.get(c.phone);
@@ -88,22 +83,21 @@ async function checkInactiveClients() {
     if (last.source === "human") continue;
     if (last.source === "followup") continue;
 
-    // Já enviamos follow-up nesta sessão?
     const sentInfo = state[phone];
     if (sentInfo && new Date(sentInfo.sentAt) > new Date(last.timestamp)) continue;
 
     try {
       const msg = buildMessage(last.source, last.name);
-      await sendMessage(phone, msg);
+      // Persist state BEFORE sending to prevent duplicate follow-ups if process crashes mid-send
       state[phone] = { sentAt: new Date().toISOString(), forSource: last.source };
+      saveState(state);
+      await sendMessage(phone, msg);
       addConversation(phone, last.name, "[follow-up automático]", msg, "followup");
       console.log(`[followup] enviado para ${maskPhone(phone)} (contexto: ${last.source})`);
     } catch (err) {
       console.error(`[followup] falhou para ${maskPhone(phone)}: ${err.message}`);
     }
   }
-
-  saveState(state);
 }
 
 function startFollowUp() {
@@ -112,13 +106,14 @@ function startFollowUp() {
     return;
   }
 
-  cron.schedule("* * * * *", () => {
+  // Every 5 minutes — no need to check every minute
+  cron.schedule("*/5 * * * *", () => {
     checkInactiveClients().catch((err) =>
       console.error("[followup] erro:", err.message)
     );
   });
 
-  console.log(`[followup] ativo — checa inatividade a cada 1min, dispara após ${FOLLOWUP_DELAY_MIN}min`);
+  console.log(`[followup] ativo — checa inatividade a cada 5min, dispara após ${FOLLOWUP_DELAY_MIN}min`);
 }
 
 module.exports = { startFollowUp, checkInactiveClients };

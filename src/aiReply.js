@@ -482,12 +482,17 @@ async function aiReply(phone, text, image = null) {
   }
 
   try {
-    const response = await client.messages.create({
-      model: "claude-haiku-4-5-20251001",
-      max_tokens: 256,          // keep replies short and cheap
-      system: buildSystemPrompt(),
-      messages: history,        // full conversation context
-    });
+    const response = await Promise.race([
+      client.messages.create({
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 256,
+        system: buildSystemPrompt(),
+        messages: history,
+      }),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Claude API timeout (15s)")), 15000)
+      ),
+    ]);
 
     const reply = response.content[0].text.trim();
 

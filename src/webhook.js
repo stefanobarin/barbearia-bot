@@ -15,11 +15,7 @@ const { sendMessage } = require("./whatsapp");
 const { addConversation } = require("./conversations");
 const { sendAlert } = require("./alerts");
 const { downloadWhatsAppMedia } = require("./media");
-
-function maskPhone(p) {
-  if (!p || p.length < 6) return "***";
-  return p.slice(0, 4) + "****" + p.slice(-2);
-}
+const { maskPhone } = require("./utils");
 
 function truncate(s, n = 80) {
   if (!s) return "";
@@ -28,7 +24,7 @@ function truncate(s, n = 80) {
 
 function verifySignature(req) {
   const appSecret = process.env.APP_SECRET;
-  if (!appSecret) return true; // sem secret configurado, libera (transição)
+  if (!appSecret) return false;
   const sig = req.headers["x-hub-signature-256"];
   if (!sig || !req.rawBody) return false;
   const expected =
@@ -66,92 +62,97 @@ router.post("/", async (req, res) => {
   // Always acknowledge immediately — Meta will retry if we don't reply fast
   res.sendStatus(200);
 
-  try {
-    const entry   = req.body?.entry?.[0];
-    const change  = entry?.changes?.[0]?.value;
-    const message = change?.messages?.[0];
-    const contact = change?.contacts?.[0];
+  const entries = req.body?.entry || [];
+  for (const entry of entries) {
+    for (const change of (entry?.changes || [])) {
+      const value    = change?.value;
+      const messages = value?.messages || [];
+      const contacts = value?.contacts || [];
 
-    if (!message) return;
-
-    const phone = message.from;
-    const name  = contact?.profile?.name || "Desconhecido";
-
-    // ── Tipos suportados: text, image ──────────────────────────
-    let text = "";
-    let image = null;
-
-    if (message.type === "text") {
-      text = message.text.body.trim();
-    } else if (message.type === "image") {
-      // Cliente mandou imagem — baixa e processa via Claude Vision
-      const mediaId = message.image?.id;
-      const caption = message.image?.caption?.trim() || "";
-
-      if (!mediaId) {
-        console.warn(`[webhook] Imagem sem ID — ignorando`);
-        return;
-      }
-
-      try {
-        console.log(`[webhook] Baixando imagem de ${maskPhone(phone)}...`);
-        image = await downloadWhatsAppMedia(mediaId);
-        text = caption; // legenda da imagem (pode ser vazia)
-        console.log(`[webhook] Imagem baixada (${image.mimeType}, ${(image.data.length * 0.75 / 1024).toFixed(0)}KB)`);
-      } catch (err) {
-        console.error(`[webhook] Falha ao baixar imagem:`, err.message);
-        await sendMessage(phone, "Ops, não consegui baixar sua imagem 😬 Manda de novo ou descreve em texto?");
-        return;
-      }
-    } else {
-      // Tipos não suportados (audio, video, document, sticker, location)
-      console.log(`[webhook] Tipo não suportado: ${message.type}`);
-      await sendMessage(phone,
-        "Oi! Aqui só processo *texto* e *imagens* 📸\n\n" +
-        "Se preferir falar com atendente humano, é só mandar 'atendente'."
-      );
-      return;
-    }
-
-    const logPreview = image ? `[imagem] ${truncate(text) || "(sem legenda)"}` : truncate(text);
-    console.log(`[webhook] Message from ${maskPhone(phone)}: "${logPreview}"`);
-
-    const { reply, source } = await handleMessage(phone, text, image);
-    await sendMessage(phone, reply);
-    addConversation(phone, name, image ? `[imagem] ${text || "(sem legenda)"}` : text, reply, source);
-
-    console.log(`[webhook] Replied to ${maskPhone(phone)} (${source})`);
-
-    // Escalação: cliente pediu atendente humano → avisa a barbearia
-    if (source === "human" && process.env.BARBERSHOP_PHONE) {
-      const alert =
-        `🆘 *Cliente quer atendimento humano*\n\n` +
-        `👤 ${name}\n` +
-        `📱 +${phone}\n` +
-        `💬 "${text}"\n\n` +
-        `Responda direto pelo WhatsApp.`;
-      try {
-        await sendMessage(process.env.BARBERSHOP_PHONE, alert);
-        console.log(`[webhook] Escalation sent to barbershop`);
-      } catch (e) {
-        console.error("[webhook] Failed to notify barbershop:", e.message);
+      for (let i = 0; i < messages.length; i++) {
+        const message = messages[i];
+        const contact = contacts[i] || contacts[0];
+        processIncoming(message, contact).catch((err) => {
+          console.error("[webhook] Error processing message:", err.message);
+          sendAlert("webhook_error", `⚠️ Erro ao processar mensagem:\n${err.message}`);
+        });
       }
     }
-  } catch (err) {
-    console.error("[webhook] Error processing message:", err.message);
-    sendAlert("webhook_error", `⚠️ Erro ao processar mensagem do cliente:\n${err.message}`);
   }
 });
 
+// ── Per-message processing ────────────────────────────────────
+async function processIncoming(message, contact) {
+  if (!message) return;
+
+  const phone = message.from;
+  const name  = contact?.profile?.name || "Desconhecido";
+
+  let text = "";
+  let image = null;
+
+  if (message.type === "text") {
+    text = message.text.body.trim();
+  } else if (message.type === "image") {
+    const mediaId = message.image?.id;
+    const caption = message.image?.caption?.trim() || "";
+
+    if (!mediaId) {
+      console.warn(`[webhook] Imagem sem ID — ignorando`);
+      return;
+    }
+
+    try {
+      console.log(`[webhook] Baixando imagem de ${maskPhone(phone)}...`);
+      image = await downloadWhatsAppMedia(mediaId);
+      text = caption;
+      console.log(`[webhook] Imagem baixada (${image.mimeType}, ${(image.data.length * 0.75 / 1024).toFixed(0)}KB)`);
+    } catch (err) {
+      console.error(`[webhook] Falha ao baixar imagem:`, err.message);
+      await sendMessage(phone, "Ops, não consegui baixar sua imagem 😬 Manda de novo ou descreve em texto?");
+      return;
+    }
+  } else {
+    console.log(`[webhook] Tipo não suportado: ${message.type}`);
+    await sendMessage(phone,
+      "Oi! Aqui só processo *texto* e *imagens* 📸\n\n" +
+      "Se preferir falar com atendente humano, é só mandar 'atendente'."
+    );
+    return;
+  }
+
+  const logPreview = image ? `[imagem] ${truncate(text) || "(sem legenda)"}` : truncate(text);
+  console.log(`[webhook] Message from ${maskPhone(phone)}: "${logPreview}"`);
+
+  const { reply, source } = await handleMessage(phone, text, image);
+  await sendMessage(phone, reply);
+  addConversation(phone, name, image ? `[imagem] ${text || "(sem legenda)"}` : text, reply, source);
+
+  console.log(`[webhook] Replied to ${maskPhone(phone)} (${source})`);
+
+  if (source === "human" && process.env.BARBERSHOP_PHONE) {
+    const alert =
+      `🆘 *Cliente quer atendimento humano*\n\n` +
+      `👤 ${name}\n` +
+      `📱 +${phone}\n` +
+      `💬 "${text}"\n\n` +
+      `Responda direto pelo WhatsApp.`;
+    try {
+      await sendMessage(process.env.BARBERSHOP_PHONE, alert);
+      console.log(`[webhook] Escalation sent to barbershop`);
+    } catch (e) {
+      console.error("[webhook] Failed to notify barbershop:", e.message);
+    }
+  }
+}
+
 // ── Core message-handling logic ───────────────────────────────
 async function handleMessage(phone, text, image = null) {
-  // Se tem imagem, vai DIRETO pra IA (vision) — pula intent/FAQ
   if (image) {
     const aiAnswer = await aiReply(phone, text, image);
     return { reply: aiAnswer, source: "ai_vision" };
   }
 
-  // Sem imagem: pipeline normal (intent → FAQ → IA)
   const intent = classifyIntent(text);
   if (intent) return { reply: buildReply(intent), source: intent };
 

@@ -12,6 +12,7 @@ const crypto = require("crypto");
 const { getAll, todayConversations, weekConversations, byPhone } = require("./conversations");
 const { getAll: getFaqAll, addFaqEntry, removeFaqEntry, updateFaqEntry, resetFaqFromSeed } = require("./faqMatcher");
 const { sendAlert } = require("./alerts");
+const { getDiskStats, getConvFileSizeMB } = require("./diskMonitor");
 
 const router = express.Router();
 
@@ -29,9 +30,10 @@ router.use((req, res, next) => {
   const [, encoded] = auth.split(" ");
   const decoded = Buffer.from(encoded, "base64").toString();
   const pw = decoded.split(":").slice(1).join(":");
-  const a = Buffer.from(pw);
-  const b = Buffer.from(password);
-  const ok = a.length === b.length && crypto.timingSafeEqual(a, b);
+  // Hash both values so timingSafeEqual always compares equal-length buffers
+  const a = crypto.createHmac("sha256", "baronelli").update(pw).digest();
+  const b = crypto.createHmac("sha256", "baronelli").update(password).digest();
+  const ok = crypto.timingSafeEqual(a, b);
   if (!ok) {
     res.set("WWW-Authenticate", 'Basic realm="Painel Baronelli"');
     return res.status(401).send("Senha incorreta");
@@ -477,13 +479,34 @@ router.get("/", (req, res) => {
   else if (filter === "all") base = getAll();
   else base = todayConversations();
 
+  const disk = getDiskStats();
+  const convSizeMB = getConvFileSizeMB();
+  const diskBanner = (() => {
+    if (!disk) return "";
+    const pct = parseFloat(disk.freePct);
+    if (pct < 10) {
+      return `<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:0.7rem 1rem;margin-bottom:1rem;color:#dc2626;font-size:0.85rem;font-weight:600;display:flex;gap:0.5rem;align-items:center;">
+        ⚠️ Disco quase cheio — ${disk.freeMB}MB livres (${disk.freePct}%). Limpe conversas antigas ou aumente o volume no Railway.
+      </div>`;
+    }
+    if (pct < 20) {
+      return `<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:0.7rem 1rem;margin-bottom:1rem;color:#92400e;font-size:0.85rem;font-weight:600;display:flex;gap:0.5rem;align-items:center;">
+        ⚡ Disco com ${disk.freeMB}MB livres (${disk.freePct}%). Fique de olho.
+      </div>`;
+    }
+    return `<div style="background:#f0fdf4;border:1px solid #86efac;border-radius:10px;padding:0.5rem 1rem;margin-bottom:1rem;color:#15803d;font-size:0.8rem;display:flex;gap:0.5rem;align-items:center;">
+      ✅ Disco OK — ${disk.freeMB}MB livres · conversas.json ${convSizeMB.toFixed(1)}MB
+    </div>`;
+  })();
+
   const sorted = [...base].reverse();
 
-  // Métricas
-  const uniquePhones = new Set(sorted.map((c) => c.phone)).size;
-  const humanCount = sorted.filter((c) => c.source === "human").length;
-  const aiCount = sorted.filter((c) => c.source === "ai" || c.source === "ai_vision").length;
-  const escRate = sorted.length > 0 ? Math.round((humanCount / sorted.length) * 100) : 0;
+  // Métricas — exclui follow-ups automáticos da contagem de conversas reais
+  const realConvs = sorted.filter((c) => c.source !== "followup");
+  const uniquePhones = new Set(realConvs.map((c) => c.phone)).size;
+  const humanCount = realConvs.filter((c) => c.source === "human").length;
+  const aiCount = realConvs.filter((c) => c.source === "ai" || c.source === "ai_vision").length;
+  const escRate = realConvs.length > 0 ? Math.round((humanCount / realConvs.length) * 100) : 0;
   const period = filter === "today" ? "hoje" : filter === "week" ? "esta semana" : "no total";
 
   const html = `<!DOCTYPE html>
@@ -508,34 +531,35 @@ router.get("/", (req, res) => {
   </header>
 
   <main class="main">
+    ${diskBanner}
     <!-- Cards de métricas -->
     <div class="stats-grid">
-      <div class="stat-card blue">
+      <div class="stat-card blue" style="cursor:default">
         <div class="stat-icon blue">💬</div>
         <div class="stat-body">
-          <span class="value">${sorted.length}</span>
+          <span class="value">${realConvs.length}</span>
           <span class="label">Conversas ${period}</span>
         </div>
       </div>
-      <div class="stat-card green">
+      <div class="stat-card green" style="cursor:default">
         <div class="stat-icon green">👥</div>
         <div class="stat-body">
           <span class="value">${uniquePhones}</span>
           <span class="label">Clientes únicos</span>
         </div>
       </div>
-      <div class="stat-card red">
+      <div class="stat-card red" style="cursor:pointer" title="Clique para filtrar escalações" onclick="document.getElementById('sourceFilter').value='human';applyFilter()">
         <div class="stat-icon red">🆘</div>
         <div class="stat-body">
           <span class="value">${humanCount}</span>
-          <span class="label">Escalações${sorted.length > 0 ? ` · ${escRate}%` : ""}</span>
+          <span class="label">Escalações${realConvs.length > 0 ? ` · ${escRate}%` : ""} ↗</span>
         </div>
       </div>
-      <div class="stat-card purple">
+      <div class="stat-card purple" style="cursor:pointer" title="Clique para filtrar respostas IA" onclick="document.getElementById('sourceFilter').value='ai';applyFilter()">
         <div class="stat-icon purple">🤖</div>
         <div class="stat-body">
           <span class="value">${aiCount}</span>
-          <span class="label">Respostas por IA</span>
+          <span class="label">Respostas por IA ↗</span>
         </div>
       </div>
     </div>
@@ -550,6 +574,7 @@ router.get("/", (req, res) => {
       <select class="source-filter" id="sourceFilter" onchange="applyFilter()">
         <option value="">Todas as fontes</option>
         <option value="ai">🤖 IA</option>
+        <option value="ai_vision">📸 IA + Imagem</option>
         <option value="faq">📋 FAQ</option>
         <option value="human">👤 Humano</option>
         <option value="booking">📅 Agendamento</option>

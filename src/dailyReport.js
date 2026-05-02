@@ -9,7 +9,7 @@ const { todayConversations } = require("./conversations");
 const { sendMessage } = require("./whatsapp");
 
 function buildReport() {
-  const today = todayConversations();
+  const today = todayConversations().filter((c) => c.source !== "followup");
   const total = today.length;
   const uniqueClients = new Set(today.map((c) => c.phone)).size;
   const escalations = today.filter((c) => c.source === "human").length;

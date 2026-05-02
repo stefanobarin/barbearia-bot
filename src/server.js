@@ -9,6 +9,7 @@ const webhookRouter = require("./webhook");
 const adminRouter = require("./admin");
 const { startDailyReport } = require("./dailyReport");
 const { startFollowUp } = require("./followUp");
+const { startDiskMonitor } = require("./diskMonitor");
 const { sendAlert } = require("./alerts");
 
 process.on("uncaughtException", async (err) => {
@@ -64,6 +65,7 @@ app.listen(PORT, () => {
   console.log(`[server] Running on port ${PORT}`);
   startDailyReport();
   startFollowUp();
+  startDiskMonitor();
 
   if (process.env.STARTUP_ALERT === "true") {
     sendAlert("startup", "✅ Bot iniciado com sucesso");

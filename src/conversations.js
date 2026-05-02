@@ -12,6 +12,9 @@ const FILE = path.join(DATA_DIR, "conversations.json");
 try { fs.mkdirSync(DATA_DIR, { recursive: true }); } catch {}
 const MAX_ENTRIES = 5000;
 
+// Async write queue: serializes writes, never blocks the event loop
+let _writeQueue = Promise.resolve();
+
 function load() {
   try {
     return JSON.parse(fs.readFileSync(FILE, "utf-8"));
@@ -22,7 +25,10 @@ function load() {
 
 function save(entries) {
   const trimmed = entries.slice(-MAX_ENTRIES);
-  fs.writeFileSync(FILE, JSON.stringify(trimmed, null, 2));
+  const data = JSON.stringify(trimmed, null, 2);
+  _writeQueue = _writeQueue
+    .then(() => fs.promises.writeFile(FILE, data))
+    .catch((err) => console.error("[conversations] write error:", err.message));
 }
 
 function addConversation(phone, name, message, reply, source) {
