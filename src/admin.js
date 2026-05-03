@@ -17,28 +17,194 @@ const { getStats: getTokenStats, formatTokens } = require("./tokenTracker");
 
 const router = express.Router();
 
-// ── Basic Auth ────────────────────────────────────────────────
-router.use((req, res, next) => {
+// ── Session helpers ───────────────────────────────────────────
+function makeToken(password) {
+  return crypto.createHmac("sha256", password).update("baron-admin-v1").digest("hex");
+}
+
+function parseCookies(req) {
+  const cookies = {};
+  for (const part of (req.headers.cookie || "").split(";")) {
+    const idx = part.indexOf("=");
+    if (idx === -1) continue;
+    cookies[part.slice(0, idx).trim()] = part.slice(idx + 1).trim();
+  }
+  return cookies;
+}
+
+function isAuthenticated(req) {
   const password = process.env.ADMIN_PASSWORD;
-  if (!password) {
+  if (!password) return false;
+  const token = parseCookies(req).admin_token || "";
+  const expected = makeToken(password);
+  try {
+    return crypto.timingSafeEqual(Buffer.from(token, "hex"), Buffer.from(expected, "hex"));
+  } catch { return false; }
+}
+
+function setSessionCookie(res, req, password) {
+  const token = makeToken(password);
+  const isHttps = req.headers["x-forwarded-proto"] === "https";
+  const secure = isHttps ? "; Secure" : "";
+  res.setHeader("Set-Cookie",
+    `admin_token=${token}; HttpOnly; SameSite=Strict; Max-Age=${7 * 24 * 3600}; Path=/admin${secure}`
+  );
+}
+
+function clearSessionCookie(res) {
+  res.setHeader("Set-Cookie", "admin_token=; HttpOnly; SameSite=Strict; Max-Age=0; Path=/admin");
+}
+
+// ── Login page ────────────────────────────────────────────────
+const LOGIN_CSS = `
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    min-height: 100vh;
+    background: linear-gradient(135deg, #0f1f3d 0%, #1a3a8f 50%, #2563eb 100%);
+    display: flex; align-items: center; justify-content: center; padding: 1rem;
+  }
+  .card {
+    background: #fff; border-radius: 24px; padding: 2.5rem 2rem;
+    width: 100%; max-width: 400px;
+    box-shadow: 0 25px 60px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.06);
+    animation: fadeUp 0.3s ease;
+  }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .logo {
+    width: 72px; height: 72px;
+    background: linear-gradient(135deg, #1e3a5f 0%, #1d4ed8 100%);
+    border-radius: 20px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 2.1rem; margin: 0 auto 1.4rem;
+    box-shadow: 0 8px 24px rgba(29,78,216,0.4);
+  }
+  .title { text-align: center; margin-bottom: 2rem; }
+  .title h1 { font-size: 1.35rem; font-weight: 800; color: #0f172a; letter-spacing: -0.4px; }
+  .title p  { font-size: 0.82rem; color: #94a3b8; margin-top: 0.3rem; font-weight: 500; }
+  .error {
+    background: #fef2f2; border: 1px solid #fecaca; border-radius: 10px;
+    padding: 0.75rem 1rem; margin-bottom: 1.25rem;
+    color: #dc2626; font-size: 0.85rem; font-weight: 600;
+    display: flex; align-items: center; gap: 0.4rem;
+  }
+  label {
+    display: block; font-size: 0.72rem; color: #64748b;
+    font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 0.45rem;
+  }
+  .input-wrap { position: relative; margin-bottom: 1.5rem; }
+  .input-wrap input {
+    width: 100%; padding: 0.78rem 3rem 0.78rem 1rem;
+    border: 1.5px solid #e2e8f0; border-radius: 10px;
+    font-size: 0.95rem; font-family: inherit;
+    color: #0f172a; background: #f8fafc;
+    outline: none; transition: all 0.15s;
+  }
+  .input-wrap input:focus {
+    border-color: #2563eb; background: #fff;
+    box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
+  }
+  .toggle-pw {
+    position: absolute; right: 0.85rem; top: 50%; transform: translateY(-50%);
+    background: none; border: none; cursor: pointer;
+    font-size: 1rem; color: #94a3b8; padding: 0; line-height: 1;
+    transition: color 0.15s;
+  }
+  .toggle-pw:hover { color: #475569; }
+  .btn {
+    width: 100%;
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    color: #fff; border: none;
+    padding: 0.82rem 1.5rem; border-radius: 10px;
+    font-size: 0.95rem; font-weight: 700; font-family: inherit;
+    cursor: pointer; letter-spacing: -0.1px;
+    box-shadow: 0 4px 14px rgba(37,99,235,0.35);
+    transition: all 0.15s;
+  }
+  .btn:hover {
+    background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+    box-shadow: 0 6px 20px rgba(37,99,235,0.45); transform: translateY(-1px);
+  }
+  .btn:active { transform: translateY(0); }
+  .footer-note { text-align: center; margin-top: 1.5rem; font-size: 0.72rem; color: #cbd5e1; }
+`;
+
+router.get("/login", (req, res) => {
+  if (isAuthenticated(req)) return res.redirect("/admin");
+  const error = req.query.error === "1";
+  res.setHeader("Content-Type", "text/html; charset=utf-8");
+  res.send(`<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login — Barbearia Baronelli</title>
+  <style>${LOGIN_CSS}</style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo">💈</div>
+    <div class="title">
+      <h1>Barbearia Baronelli</h1>
+      <p>Painel Administrativo</p>
+    </div>
+    ${error ? `<div class="error">❌ Senha incorreta. Tente novamente.</div>` : ""}
+    <form method="POST" action="/admin/login">
+      <label for="pw">Senha</label>
+      <div class="input-wrap">
+        <input id="pw" name="password" type="password" placeholder="••••••••"
+               autofocus autocomplete="current-password" required>
+        <button type="button" class="toggle-pw" onclick="togglePw()" title="Mostrar senha">👁️</button>
+      </div>
+      <button class="btn" type="submit">Entrar no Painel</button>
+    </form>
+    <p class="footer-note">Barbearia Baronelli · Campinas/SP</p>
+  </div>
+  <script>
+    function togglePw() {
+      const i = document.getElementById('pw');
+      i.type = i.type === 'password' ? 'text' : 'password';
+    }
+    document.querySelector('form').addEventListener('submit', function() {
+      const btn = this.querySelector('.btn');
+      btn.textContent = 'Entrando…';
+      btn.disabled = true;
+    });
+  </script>
+</body>
+</html>`);
+});
+
+router.post("/login",
+  express.urlencoded({ extended: false, limit: "2kb" }),
+  (req, res) => {
+    const password = process.env.ADMIN_PASSWORD;
+    if (!password) return res.status(500).send("ADMIN_PASSWORD não configurado.");
+    const submitted = String(req.body.password || "");
+    const a = crypto.createHmac("sha256", "baronelli").update(submitted).digest();
+    const b = crypto.createHmac("sha256", "baronelli").update(password).digest();
+    const ok = crypto.timingSafeEqual(a, b);
+    if (!ok) return res.redirect("/admin/login?error=1");
+    setSessionCookie(res, req, password);
+    res.redirect("/admin");
+  }
+);
+
+router.get("/logout", (req, res) => {
+  clearSessionCookie(res);
+  res.redirect("/admin/login");
+});
+
+// ── Auth middleware (protects all routes below) ───────────────
+router.use((req, res, next) => {
+  if (!process.env.ADMIN_PASSWORD) {
     return res.status(500).send("ADMIN_PASSWORD não configurado.");
   }
-  const auth = req.headers.authorization;
-  if (!auth || !auth.startsWith("Basic ")) {
-    res.set("WWW-Authenticate", 'Basic realm="Painel Baronelli"');
-    return res.status(401).send("Autenticação requerida");
-  }
-  const [, encoded] = auth.split(" ");
-  const decoded = Buffer.from(encoded, "base64").toString();
-  const pw = decoded.split(":").slice(1).join(":");
-  // Hash both values so timingSafeEqual always compares equal-length buffers
-  const a = crypto.createHmac("sha256", "baronelli").update(pw).digest();
-  const b = crypto.createHmac("sha256", "baronelli").update(password).digest();
-  const ok = crypto.timingSafeEqual(a, b);
-  if (!ok) {
-    res.set("WWW-Authenticate", 'Basic realm="Painel Baronelli"');
-    return res.status(401).send("Senha incorreta");
-  }
+  if (!isAuthenticated(req)) return res.redirect("/admin/login");
   next();
 });
 
@@ -535,6 +701,7 @@ router.get("/", (req, res) => {
     <nav class="header-nav">
       <a href="/admin" class="nav-btn active">Conversas</a>
       <a href="/admin/faq" class="nav-btn">FAQ</a>
+      <a href="/admin/logout" class="nav-btn" style="opacity:0.6">Sair</a>
     </nav>
   </header>
 
@@ -740,6 +907,7 @@ router.get("/faq", (req, res) => {
     <nav class="header-nav">
       <a href="/admin" class="nav-btn">Conversas</a>
       <a href="/admin/faq" class="nav-btn active">FAQ</a>
+      <a href="/admin/logout" class="nav-btn" style="opacity:0.6">Sair</a>
     </nav>
   </header>
 
@@ -898,6 +1066,7 @@ router.get("/cliente/:phone", (req, res) => {
     <nav class="header-nav">
       <a href="/admin" class="nav-btn">← Conversas</a>
       <a href="/admin/faq" class="nav-btn">FAQ</a>
+      <a href="/admin/logout" class="nav-btn" style="opacity:0.6">Sair</a>
     </nav>
   </header>
 
