@@ -31,9 +31,8 @@ function loadState() {
 }
 
 function saveState(state) {
-  try { fs.writeFileSync(STATE_FILE, JSON.stringify(state, null, 2)); } catch (e) {
-    console.error("[followup] save state failed:", e.message);
-  }
+  fs.promises.writeFile(STATE_FILE, JSON.stringify(state, null, 2))
+    .catch(e => console.error("[followup] save state failed:", e.message));
 }
 
 function firstName(fullName) {

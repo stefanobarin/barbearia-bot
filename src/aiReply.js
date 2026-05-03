@@ -471,16 +471,15 @@ async function aiReply(phone, text, image = null) {
     userContent = text;
   }
 
-  // Save the user turn before calling the API
-  // Pra histórico, salva só o texto (não a imagem — economiza memória)
+  // Store only text in history — never base64 image data (memory + token cost)
   addMessage(phone, "user", image ? `[imagem] ${text || "(sem legenda)"}` : text);
 
-  const history = getHistory(phone);
-
-  // Se tem imagem, substitui a última msg do histórico pela versão multimodal
-  if (image && history.length > 0) {
-    history[history.length - 1] = { role: "user", content: userContent };
-  }
+  // Build a copy for the API call; replace last entry with multimodal content if image
+  // (getHistory returns a live reference — never mutate it directly)
+  const storedHistory = getHistory(phone);
+  const apiMessages = image && storedHistory.length > 0
+    ? [...storedHistory.slice(0, -1), { role: "user", content: userContent }]
+    : storedHistory.slice();
 
   try {
     const response = await Promise.race([
@@ -488,7 +487,7 @@ async function aiReply(phone, text, image = null) {
         model: "claude-haiku-4-5-20251001",
         max_tokens: 256,
         system: [{ type: "text", text: buildSystemPrompt(), cache_control: { type: "ephemeral" } }],
-        messages: history,
+        messages: apiMessages,
       }),
       new Promise((_, reject) =>
         setTimeout(() => reject(new Error("Claude API timeout (15s)")), 15000)

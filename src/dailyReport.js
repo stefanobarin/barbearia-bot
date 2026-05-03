@@ -7,6 +7,7 @@
 const cron = require("node-cron");
 const { todayConversations } = require("./conversations");
 const { sendMessage } = require("./whatsapp");
+const { sendAlert } = require("./alerts");
 const { getStats: getTokenStats, formatTokens } = require("./tokenTracker");
 
 function buildReport() {
@@ -59,6 +60,7 @@ function startDailyReport() {
         console.log("[report] Relatório diário enviado para", owner);
       } catch (err) {
         console.error("[report] Erro ao enviar:", err.message);
+        sendAlert("daily_report_failed", `⚠️ Relatório diário falhou ao enviar:\n${err.message}`);
       }
     },
     { timezone: "America/Sao_Paulo" }
