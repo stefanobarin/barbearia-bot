@@ -487,7 +487,7 @@ async function aiReply(phone, text, image = null) {
       client.messages.create({
         model: "claude-haiku-4-5-20251001",
         max_tokens: 256,
-        system: buildSystemPrompt(),
+        system: [{ type: "text", text: buildSystemPrompt(), cache_control: { type: "ephemeral" } }],
         messages: history,
       }),
       new Promise((_, reject) =>
@@ -497,7 +497,12 @@ async function aiReply(phone, text, image = null) {
 
     const reply = response.content[0].text.trim();
 
-    logUsage(response.usage.input_tokens, response.usage.output_tokens);
+    logUsage(
+      response.usage.input_tokens,
+      response.usage.output_tokens,
+      response.usage.cache_creation_input_tokens || 0,
+      response.usage.cache_read_input_tokens     || 0,
+    );
 
     // Save the assistant turn so the next message has context
     addMessage(phone, "assistant", reply);

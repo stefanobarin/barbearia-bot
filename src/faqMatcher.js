@@ -131,23 +131,28 @@ function getAll() {
   return faqEntries;
 }
 
+function writeFaq() {
+  fs.promises.writeFile(faqPath, JSON.stringify(faqEntries, null, 2))
+    .catch(err => console.error("[faq] write error:", err.message));
+}
+
 function addFaqEntry(pergunta, resposta) {
   faqEntries.push({ pergunta: pergunta.trim(), resposta: resposta.trim() });
   rebuildTokenized();
-  fs.writeFileSync(faqPath, JSON.stringify(faqEntries, null, 2));
+  writeFaq();
 }
 
 function removeFaqEntry(index) {
   faqEntries.splice(index, 1);
   rebuildTokenized();
-  fs.writeFileSync(faqPath, JSON.stringify(faqEntries, null, 2));
+  writeFaq();
 }
 
 function updateFaqEntry(index, pergunta, resposta) {
   if (index < 0 || index >= faqEntries.length) return;
   faqEntries[index] = { pergunta: pergunta.trim(), resposta: resposta.trim() };
   rebuildTokenized();
-  fs.writeFileSync(faqPath, JSON.stringify(faqEntries, null, 2));
+  writeFaq();
 }
 
 function resetFaqFromSeed() {

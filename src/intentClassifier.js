@@ -45,43 +45,33 @@ const INTENTS = {
     "qual o link", "como agendar online", "agora", "urgente",
   ],
   human: [
-    // ────────────────────────────────────────────────────────
-    // REDUNDÂNCIA ABSOLUTA: capturar TODA variação de "quero falar com humano"
-    // Simples: uma palavra isolada ou no meio da frase
+    // Palavras que indicam claramente querer atendimento humano
     "atendente", "atendentes",
-    "humano", "humana", "humanidade",
+    "humano", "humana",
     "pessoa", "pessoal", "pessoas",
 
-    // Variações com "falar com"
+    // "falar com" + humano/gerente/responsável
     "falar com alguém", "falar com alguem", "falar com pessoa",
     "falar com humano", "falar com atendente", "falar com gerente",
     "falar com responsavel", "falar com responsável",
 
-    // Variações com "quero"
-    "quero falar", "quero atendimento", "quero pessoal",
-    "quero humano", "quero atender", "quero ser atendido",
-    "quero ser atendida", "quero uma pessoa",
+    // "quero" + atendimento humano
+    "quero falar", "quero atendimento", "quero humano",
+    "quero ser atendido", "quero ser atendida", "quero uma pessoa",
 
-    // Variações com "preciso"
+    // "preciso de" + humano
     "preciso de atendente", "preciso de humano", "preciso de pessoa",
-    "preciso falar", "preciso atender",
+    "preciso falar",
 
-    // Variações com negação/frustração (cliente quer desistir do bot)
-    "ninguém me ajuda", "ninguem me ajuda", "não me ajuda", "nao me ajuda",
-    "não tá funcionando", "nao ta funcionando", "não funciona",
-    "tá errado", "ta errado", "erro", "problma", "problema",
-    "não entendi", "nao entendi", "não entendo", "nao entendo",
+    // Frustração clara com o bot
+    "ninguém me ajuda", "ninguem me ajuda",
 
-    // Gerente/suporte
+    // Gerência/responsável
     "gerente", "supervisor", "responsável", "responsavel",
-    "suporte", "support", "help", "ajuda",
-
-    // Direto ao ponto
-    "me ajuda", "me ajude", "ajuda aí", "ajuda ai",
-    "vcs", "vocês", "can you help", "pode me ajudar",
+    "suporte", "support",
 
     // Escalação explícita
-    "escalação", "escalacao", "escalar", "elevar",
+    "escalação", "escalacao", "escalar",
     "falar com o dono", "falar com dono", "falar com chefe",
   ],
 };

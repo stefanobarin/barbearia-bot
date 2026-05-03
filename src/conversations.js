@@ -12,7 +12,6 @@ const FILE = path.join(DATA_DIR, "conversations.json");
 try { fs.mkdirSync(DATA_DIR, { recursive: true }); } catch {}
 const MAX_ENTRIES = 5000;
 
-// Async write queue: serializes writes, never blocks the event loop
 let _writeQueue = Promise.resolve();
 
 function load() {
@@ -23,17 +22,18 @@ function load() {
   }
 }
 
+// Single in-memory cache — loaded once at startup, kept in sync on writes
+let _cache = load();
+
 function save(entries) {
-  const trimmed = entries.slice(-MAX_ENTRIES);
-  const data = JSON.stringify(trimmed, null, 2);
+  const data = JSON.stringify(entries, null, 2);
   _writeQueue = _writeQueue
     .then(() => fs.promises.writeFile(FILE, data))
     .catch((err) => console.error("[conversations] write error:", err.message));
 }
 
 function addConversation(phone, name, message, reply, source) {
-  const entries = load();
-  entries.push({
+  _cache.push({
     timestamp: new Date().toISOString(),
     phone,
     name: name || "Desconhecido",
@@ -41,14 +41,15 @@ function addConversation(phone, name, message, reply, source) {
     reply,
     source,
   });
-  save(entries);
+  if (_cache.length > MAX_ENTRIES) _cache = _cache.slice(-MAX_ENTRIES);
+  save(_cache);
 }
 
 function todayConversations() {
   const today = new Date().toLocaleDateString("sv-SE", {
     timeZone: "America/Sao_Paulo",
   });
-  return load().filter((e) => {
+  return _cache.filter((e) => {
     const local = new Date(e.timestamp).toLocaleDateString("sv-SE", {
       timeZone: "America/Sao_Paulo",
     });
@@ -61,15 +62,15 @@ function weekConversations() {
   const startOfWeek = new Date(now);
   startOfWeek.setDate(now.getDate() - now.getDay());
   startOfWeek.setHours(0, 0, 0, 0);
-  return load().filter((e) => new Date(e.timestamp) >= startOfWeek);
+  return _cache.filter((e) => new Date(e.timestamp) >= startOfWeek);
 }
 
 function byPhone(phone) {
-  return load().filter((e) => e.phone === phone);
+  return _cache.filter((e) => e.phone === phone);
 }
 
 function getAll() {
-  return load();
+  return _cache;
 }
 
 module.exports = { addConversation, todayConversations, weekConversations, byPhone, getAll };
