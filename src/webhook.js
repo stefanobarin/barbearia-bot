@@ -9,7 +9,7 @@ const crypto = require("crypto");
 const router = express.Router();
 
 const { classifyIntent, buildReply } = require("./intentClassifier");
-const { matchFaq } = require("./faqMatcher");
+// faqMatcher não é mais usado no pipeline — FAQ injetado no system prompt do Claude
 const { aiReply } = require("./aiReply");
 const { sendMessage } = require("./whatsapp");
 const { addConversation } = require("./conversations");
@@ -154,22 +154,17 @@ async function handleMessage(phone, text, image = null) {
     return { reply: aiAnswer, source: "ai_vision" };
   }
 
+  // Escalação humana: único intent mantido para disparar alerta
   const intent = classifyIntent(text);
-  if (intent) {
-    const reply = buildReply(intent);
+  if (intent === "human") {
+    const reply = buildReply("human");
     addMessage(phone, "user", text);
     addMessage(phone, "assistant", reply);
-    return { reply, source: intent };
+    return { reply, source: "human" };
   }
 
-  const faqAnswer = matchFaq(text);
-  if (faqAnswer) {
-    addMessage(phone, "user", text);
-    addMessage(phone, "assistant", faqAnswer);
-    return { reply: faqAnswer, source: "faq" };
-  }
-
-  const aiAnswer = await aiReply(phone, text); // aiReply já grava no memory
+  // Tudo o mais vai direto pro Claude
+  const aiAnswer = await aiReply(phone, text);
   return { reply: aiAnswer, source: "ai" };
 }
 
