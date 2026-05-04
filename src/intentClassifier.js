@@ -11,7 +11,7 @@ const INTENTS = {
   greeting: [
     "oi", "olá", "ola", "bom dia", "boa tarde", "boa noite",
     "hey", "hello", "eai", "e aí", "tudo bem", "tudo bom",
-    "oie", "oii", "oiee", "opa", "salve", "fala", "blz", "blza",
+    "oie", "oii", "oiee", "opa", "salve", "blz", "blza",
   ],
   prices: [
     "preço", "preco", "valor", "custa", "tabela",
@@ -50,7 +50,8 @@ const INTENTS = {
     "humano", "humana",
     "pessoa", "pessoal", "pessoas",
 
-    // "falar com" + humano/gerente/responsável
+    // "falar com" qualquer pessoa específica
+    "falar com",
     "falar com alguém", "falar com alguem", "falar com pessoa",
     "falar com humano", "falar com atendente", "falar com gerente",
     "falar com responsavel", "falar com responsável",
