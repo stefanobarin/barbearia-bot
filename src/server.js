@@ -60,6 +60,28 @@ app.use("/admin", adminLimiter, express.json({ limit: "100kb" }), adminRouter);
 
 app.get("/", (_req, res) => res.send("Barbearia AI — online ✅"));
 
+app.get("/privacy", (_req, res) => {
+  res.setHeader("Content-Type", "text/html; charset=utf-8");
+  res.send(`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Política de Privacidade — Barbearia Baronelli</title></head><body style="font-family:sans-serif;max-width:700px;margin:40px auto;padding:0 20px;color:#222">
+<h1>Política de Privacidade</h1>
+<p><strong>Barbearia Baronelli</strong> — Recepção Automatizada via WhatsApp</p>
+<p>Este serviço utiliza um assistente virtual via WhatsApp para responder dúvidas e auxiliar no agendamento de clientes.</p>
+<h2>Dados coletados</h2>
+<ul>
+<li>Número de telefone do WhatsApp</li>
+<li>Nome de perfil do WhatsApp</li>
+<li>Conteúdo das mensagens enviadas para o bot</li>
+</ul>
+<h2>Uso dos dados</h2>
+<p>Os dados são usados exclusivamente para responder às mensagens do cliente, registrar o histórico de atendimento e melhorar o serviço. Não compartilhamos dados com terceiros.</p>
+<h2>Retenção</h2>
+<p>Os dados são armazenados por até 90 dias e podem ser excluídos mediante solicitação.</p>
+<h2>Contato</h2>
+<p>Dúvidas: entre em contato pelo WhatsApp da barbearia.</p>
+<p style="color:#888;font-size:0.9em">Atualizado em maio de 2026.</p>
+</body></html>`);
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`[server] Running on port ${PORT}`);
