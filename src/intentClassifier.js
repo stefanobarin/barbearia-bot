@@ -14,9 +14,9 @@ const INTENTS = {
     "oie", "oii", "oiee", "opa", "salve", "fala", "blz", "blza",
   ],
   prices: [
-    "preço", "preco", "valor", "quanto", "custa", "tabela",
+    "preço", "preco", "valor", "custa", "tabela",
     "preços", "precos", "lista de preço", "lista de preco",
-    "qual o preço", "qual é o preço", "quanto sai", "quanto fica",
+    "qual o preço", "qual é o preço", "quanto custa", "quanto sai", "quanto fica",
     "qual valor", "table de preço", "table de preco", "promoção", "promocao",
   ],
   services: [
