@@ -30,8 +30,6 @@ function loadFaq() {
   }
 }
 
-loadFaq();
-
 const STOPWORDS = new Set([
   "de", "do", "da", "dos", "das", "no", "na", "nos", "nas",
   "em", "um", "uma", "uns", "umas", "que", "por", "com", "sem",
@@ -62,6 +60,8 @@ function rebuildTokenized() {
     tokens: tokenize(e.pergunta),
   }));
 }
+
+loadFaq();
 
 /**
  * Verifica se a mensagem do cliente combina com alguma pergunta do FAQ.
