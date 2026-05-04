@@ -113,6 +113,7 @@ const REPLIES = {
     "📍 *Estamos em:*\n\n" +
     "Rua Luiz Otávio, 2625\n" +
     "Fazenda Santa Cândida, Campinas/SP\n\n" +
+    "👉 https://maps.google.com/?q=Rua+Luiz+Otávio,+2625,+Fazenda+Santa+Cândida,+Campinas,+SP\n\n" +
     "🚗 Estacionamento gratuito ao lado e na galeria. Te esperamos!",
 
   booking:
