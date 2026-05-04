@@ -815,7 +815,7 @@ router.get("/", (req, res) => {
   <script>
     const PAGE_SIZE = 50;
     let currentPage = 0;
-    const cards = Array.from(document.querySelectorAll('.conv-card'));
+    let cards = Array.from(document.querySelectorAll('.conv-card'));
 
     function applyFilter() {
       const src = document.getElementById('sourceFilter').value;
@@ -856,7 +856,7 @@ router.get("/", (req, res) => {
 
     applyFilter();
 
-    // Auto-refresh sem perder scroll
+    // Auto-refresh sem perder scroll ou filtros
     setInterval(() => {
       const scroll = window.scrollY;
       fetch(location.href)
@@ -864,14 +864,14 @@ router.get("/", (req, res) => {
         .then(html => {
           const parser = new DOMParser();
           const doc = parser.parseFromString(html, 'text/html');
-          // Atualiza só os cards e stats
           document.querySelector('.stats-grid').innerHTML = doc.querySelector('.stats-grid').innerHTML;
           document.getElementById('convList').innerHTML = doc.getElementById('convList').innerHTML;
+          cards = Array.from(document.querySelectorAll('.conv-card'));
           applyFilter();
           window.scrollTo(0, scroll);
         })
         .catch(() => {});
-    }, 60000);
+    }, 30000);
   </script>
 
   <footer class="footer">
