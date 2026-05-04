@@ -16,6 +16,7 @@ const { addConversation } = require("./conversations");
 const { sendAlert } = require("./alerts");
 const { downloadWhatsAppMedia } = require("./media");
 const { maskPhone } = require("./utils");
+const { addMessage } = require("./memory");
 
 function truncate(s, n = 80) {
   if (!s) return "";
@@ -154,12 +155,21 @@ async function handleMessage(phone, text, image = null) {
   }
 
   const intent = classifyIntent(text);
-  if (intent) return { reply: buildReply(intent), source: intent };
+  if (intent) {
+    const reply = buildReply(intent);
+    addMessage(phone, "user", text);
+    addMessage(phone, "assistant", reply);
+    return { reply, source: intent };
+  }
 
   const faqAnswer = matchFaq(text);
-  if (faqAnswer) return { reply: faqAnswer, source: "faq" };
+  if (faqAnswer) {
+    addMessage(phone, "user", text);
+    addMessage(phone, "assistant", faqAnswer);
+    return { reply: faqAnswer, source: "faq" };
+  }
 
-  const aiAnswer = await aiReply(phone, text);
+  const aiAnswer = await aiReply(phone, text); // aiReply já grava no memory
   return { reply: aiAnswer, source: "ai" };
 }
 
