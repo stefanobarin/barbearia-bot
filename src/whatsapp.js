@@ -26,7 +26,7 @@ async function sendMessage(to, text) {
   let lastErr;
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
-      await axios.post(
+      const res = await axios.post(
         `${BASE_URL}/${phoneId}/messages`,
         {
           messaging_product: "whatsapp",
@@ -42,6 +42,16 @@ async function sendMessage(to, text) {
           timeout: TIMEOUT_MS,
         }
       );
+
+      // Meta sometimes returns HTTP 200 with an error object in the body
+      if (res.data?.error) {
+        const apiErr = res.data.error;
+        console.error(`[whatsapp] API error in 200 response: ${apiErr.code} — ${apiErr.message}`);
+        throw Object.assign(new Error(apiErr.message), { response: { status: 200, data: res.data } });
+      }
+
+      const wamid = res.data?.messages?.[0]?.id || "unknown";
+      console.log(`[whatsapp] sent to ${to} — wamid: ${wamid}`);
       return;
     } catch (err) {
       lastErr = err;
