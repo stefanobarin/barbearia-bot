@@ -21,8 +21,11 @@ const { addFaqEntry } = require("./faqMatcher");
 
 const TRAINER_PHONES = new Set(
   (process.env.TRAINER_PHONES || process.env.TRAINER_PHONE || "")
-    .split(",").map(p => p.trim()).filter(Boolean)
+    .split(",").map(p => p.replace(/\D/g, "")).filter(Boolean)
 );
+if (TRAINER_PHONES.size > 0) {
+  console.log(`[webhook] Trainer phones: ${[...TRAINER_PHONES].join(", ")}`);
+}
 
 function truncate(s, n = 80) {
   if (!s) return "";
@@ -174,6 +177,7 @@ async function processIncoming(message, contact) {
   console.log(`[webhook] Message from ${maskPhone(phone)}: "${logPreview}"`);
 
   // Trainer mode: owner can send !commands to teach the bot
+  if (TRAINER_PHONES.size > 0) console.log(`[webhook] phone=${phone} trainer=${TRAINER_PHONES.has(phone)}`);
   if (TRAINER_PHONES.size > 0 && TRAINER_PHONES.has(phone) && !image) {
     const handled = await handleTrainerCommand(phone, text);
     if (handled) return;
