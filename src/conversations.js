@@ -16,8 +16,16 @@ let _writeQueue = Promise.resolve();
 
 function load() {
   try {
-    return JSON.parse(fs.readFileSync(FILE, "utf-8"));
-  } catch {
+    const raw = fs.readFileSync(FILE, "utf-8");
+    const data = JSON.parse(raw);
+    console.log(`[conversations] ${data.length} entradas carregadas de ${FILE}`);
+    return data;
+  } catch (err) {
+    if (err.code !== "ENOENT") {
+      console.error(`[conversations] falha ao carregar ${FILE}: ${err.message}`);
+    } else {
+      console.log(`[conversations] ${FILE} não encontrado — iniciando vazio`);
+    }
     return [];
   }
 }
