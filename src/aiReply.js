@@ -274,7 +274,7 @@ Rua Luiz Otávio, 2625 — Fazenda Santa Cândida, Campinas/SP
 
 👨‍👦 Crianças: atendemos qualquer idade
 
-📅 Agendamento: ${process.env.BOOKING_LINK || "https://cashbarber.com.br/baronelli/inicio"}
+📅 Agendamento: ${process.env.BOOKING_LINK || "https://cashbarber.com.br/baronelli"}
 
 🎉 Primeira vez: cliente novo paga R$39,90 no corte (agendando com 1 dia de antecedência)
 

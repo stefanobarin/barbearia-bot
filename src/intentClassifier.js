@@ -119,7 +119,7 @@ const REPLIES = {
 
   booking:
     `Bora marcar! 📲\n\n` +
-    `Acessa aqui: ${process.env.BOOKING_LINK || "https://cashbarber.com.br/baronelli/inicio"}\n\n` +
+    `Acessa aqui: ${process.env.BOOKING_LINK || "https://cashbarber.com.br/baronelli"}\n\n` +
     "Escolhe o barbeiro, dia e horário. Qualquer dúvida é só chamar! 😊",
 
   human:
