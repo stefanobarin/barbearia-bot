@@ -81,7 +81,7 @@ router.post("/", async (req, res) => {
 
       for (let i = 0; i < messages.length; i++) {
         const message = messages[i];
-        const contact = contacts[i] || contacts[0];
+        const contact = contacts.find(c => c.wa_id === message.from) || contacts[i] || contacts[0];
         processIncoming(message, contact).catch((err) => {
           console.error("[webhook] Error processing message:", err.message);
           sendAlert("webhook_error", `⚠️ Erro ao processar mensagem:\n${err.message}`);
@@ -200,7 +200,7 @@ async function processIncoming(message, contact) {
   console.log(`[webhook] Message from ${maskPhone(phone)}: "${logPreview}"`);
 
   // Trainer mode: owner can send !commands to teach the bot
-  if (TRAINER_PHONES.size > 0) console.log(`[webhook] phone=${phone} trainer=${TRAINER_PHONES.has(phone)}`);
+  if (process.env.DEBUG === "true" && TRAINER_PHONES.size > 0) console.log(`[webhook] trainer check: phone=${phone} isTrainer=${TRAINER_PHONES.has(phone)}`);
   if (TRAINER_PHONES.size > 0 && TRAINER_PHONES.has(phone) && !image) {
     const handled = await handleTrainerCommand(phone, text);
     if (handled) return;

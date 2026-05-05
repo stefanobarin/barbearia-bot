@@ -41,7 +41,11 @@ function addConversation(phone, name, message, reply, source) {
     reply,
     source,
   });
-  if (_cache.length > MAX_ENTRIES) _cache = _cache.slice(-MAX_ENTRIES);
+  if (_cache.length > MAX_ENTRIES) {
+    const pruned = _cache.length - MAX_ENTRIES;
+    _cache = _cache.slice(-MAX_ENTRIES);
+    console.warn(`[conversations] ${pruned} entradas antigas removidas (limite: ${MAX_ENTRIES}). Considere aumentar MAX_ENTRIES.`);
+  }
   save(_cache);
 }
 
@@ -60,7 +64,9 @@ function todayConversations() {
 function weekConversations() {
   const now = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
   const startOfWeek = new Date(now);
-  startOfWeek.setDate(now.getDate() - now.getDay());
+  // ISO week: Monday = 0 offset. getDay() returns 0=Sun,1=Mon...6=Sat
+  const dayOfWeek = now.getDay();
+  startOfWeek.setDate(now.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
   startOfWeek.setHours(0, 0, 0, 0);
   return _cache.filter((e) => new Date(e.timestamp) >= startOfWeek);
 }

@@ -8,6 +8,7 @@
 //    WHATSAPP_PHONE_ID — the Phone Number ID from Meta dashboard
 // ─────────────────────────────────────────────────────────────
 const axios = require("axios");
+const { sendAlert } = require("./alerts");
 
 const BASE_URL = "https://graph.facebook.com/v19.0";
 const MAX_RETRIES = 3;
@@ -62,7 +63,6 @@ async function sendMessage(to, text) {
       if (status === 401 || status === 400) {
         if (status === 401) {
           try {
-            const { sendAlert } = require("./alerts");
             await sendAlert(
               "whatsapp_token_expired",
               `❌ Token WhatsApp INVÁLIDO ou EXPIRADO!\n\nResposta da Meta: ${apiMsg}\n\n*Ação:* Atualize WHATSAPP_TOKEN no Railway.`
@@ -85,7 +85,6 @@ async function sendMessage(to, text) {
   const apiMsg = lastErr.response?.data?.error?.message || lastErr.message;
   if (status >= 500) {
     try {
-      const { sendAlert } = require("./alerts");
       await sendAlert(
         "whatsapp_api_down",
         `⚠️ Meta WhatsApp API instável após ${MAX_RETRIES} tentativas (HTTP ${status})\n${apiMsg}`

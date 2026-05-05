@@ -21,10 +21,14 @@ process.on("uncaughtException", async (err) => {
   }
 });
 
-process.on("unhandledRejection", (reason) => {
+process.on("unhandledRejection", async (reason) => {
   console.error("[CRASH] unhandledRejection:", reason);
   const msg = reason instanceof Error ? reason.message : String(reason);
-  sendAlert("crash_rejection", `⚠️ Promise não tratada\n${msg}`);
+  try {
+    await sendAlert("crash_rejection", `⚠️ Promise não tratada\n${msg}\n\nO Railway vai reiniciar.`);
+  } finally {
+    process.exit(1);
+  }
 });
 
 const app = express();
@@ -82,9 +86,44 @@ app.get("/privacy", (_req, res) => {
 </body></html>`);
 });
 
+// ── Health check ──────────────────────────────────────────────
+const fs = require("fs");
+const path = require("path");
+app.get("/health", (_req, res) => {
+  const dataDir = process.env.DATA_DIR || path.join(__dirname, "..");
+  const files = ["conversations.json", "memory.json", "followups.json", "tokenUsage.json"];
+  const storage = {};
+  for (const f of files) {
+    const fp = path.join(dataDir, f);
+    try {
+      const stat = fs.statSync(fp);
+      storage[f] = `${(stat.size / 1024).toFixed(1)}KB`;
+    } catch {
+      storage[f] = "não encontrado";
+    }
+  }
+  res.json({ status: "ok", uptime: Math.floor(process.uptime()), dataDir, storage });
+});
+
+// ── Graceful shutdown ──────────────────────────────────────────
+function shutdown(signal) {
+  console.log(`[server] ${signal} recebido — aguardando writes pendentes...`);
+  setTimeout(() => process.exit(0), 1000);
+}
+process.on("SIGTERM", () => shutdown("SIGTERM"));
+process.on("SIGINT",  () => shutdown("SIGINT"));
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
+  const dataDir = process.env.DATA_DIR || path.join(__dirname, "..");
   console.log(`[server] Running on port ${PORT}`);
+  console.log(`[server] DATA_DIR: ${dataDir}`);
+  try {
+    const stat = fs.statSync(dataDir);
+    console.log(`[server] /data existe: ${stat.isDirectory() ? "diretório ✓" : "não é diretório ✗"}`);
+  } catch {
+    console.warn(`[server] DATA_DIR não existe — dados serão efêmeros!`);
+  }
   startDailyReport();
   startFollowUp();
   startDiskMonitor();

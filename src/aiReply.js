@@ -499,6 +499,7 @@ async function aiReply(phone, text, image = null) {
     ? [...storedHistory.slice(0, -1), { role: "user", content: userContent }]
     : storedHistory.slice();
 
+  let _timeoutId;
   try {
     const response = await Promise.race([
       client.messages.create({
@@ -507,10 +508,11 @@ async function aiReply(phone, text, image = null) {
         system: [{ type: "text", text: buildSystemPrompt(), cache_control: { type: "ephemeral" } }],
         messages: apiMessages,
       }),
-      new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("Claude API timeout (15s)")), 15000)
-      ),
+      new Promise((_, reject) => {
+        _timeoutId = setTimeout(() => reject(new Error("Claude API timeout (15s)")), 15000);
+      }),
     ]);
+    clearTimeout(_timeoutId);
 
     const reply = response.content[0].text.trim();
 
@@ -526,6 +528,7 @@ async function aiReply(phone, text, image = null) {
 
     return reply;
   } catch (err) {
+    clearTimeout(_timeoutId);
     console.error("[aiReply] Claude API error:", err.message);
 
     const status = err.status || err.response?.status;
