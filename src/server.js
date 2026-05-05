@@ -47,6 +47,13 @@ const adminLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: "Muitas tentativas. Tente novamente em 15 minutos.",
+});
 
 app.use(
   "/webhook",
@@ -60,6 +67,7 @@ app.use(
   webhookRouter
 );
 
+app.post("/admin/login", loginLimiter);
 app.use("/admin", adminLimiter, express.json({ limit: "100kb" }), adminRouter);
 
 app.get("/", (_req, res) => res.send("Barbearia AI — online ✅"));
@@ -90,19 +98,7 @@ app.get("/privacy", (_req, res) => {
 const fs = require("fs");
 const path = require("path");
 app.get("/health", (_req, res) => {
-  const dataDir = process.env.DATA_DIR || path.join(__dirname, "..");
-  const files = ["conversations.json", "memory.json", "followups.json", "tokenUsage.json"];
-  const storage = {};
-  for (const f of files) {
-    const fp = path.join(dataDir, f);
-    try {
-      const stat = fs.statSync(fp);
-      storage[f] = `${(stat.size / 1024).toFixed(1)}KB`;
-    } catch {
-      storage[f] = "não encontrado";
-    }
-  }
-  res.json({ status: "ok", uptime: Math.floor(process.uptime()), dataDir, storage });
+  res.json({ status: "ok", uptime: Math.floor(process.uptime()) });
 });
 
 // ── Graceful shutdown ──────────────────────────────────────────
