@@ -1,54 +1,63 @@
 // ─────────────────────────────────────────────────────────────
-//  Conversation memory — in-memory, per user
+//  Conversation memory — persisted to disk per user
 //
 //  Stores the last MAX_MESSAGES exchanges so Claude has context.
-//  Data resets when the server restarts (intentional for simplicity).
-//  Upgrade to Redis if you need persistence across restarts.
+//  Survives server restarts via /data/memory.json.
 // ─────────────────────────────────────────────────────────────
+const fs   = require("fs");
+const path = require("path");
 
-const MAX_MESSAGES = 10; // keep the last 10 messages per user
+const DATA_DIR  = process.env.DATA_DIR || path.join(__dirname, "..");
+const FILE      = path.join(DATA_DIR, "memory.json");
+const MAX_MESSAGES = 10; // last 10 turns per user (5 exchanges)
 
-// Map<phoneNumber, Array<{ role: "user"|"assistant", content: string }>>
-const store = new Map();
+// Map<phone, Array<{role, content}>>
+let store = new Map();
 
-/**
- * Returns the conversation history for a phone number.
- * Creates an empty array if this is the first message.
- *
- * @param {string} phone
- * @returns {Array<{role: string, content: string}>}
- */
-function getHistory(phone) {
-  if (!store.has(phone)) {
-    store.set(phone, []);
+let _writeQueue = Promise.resolve();
+
+function loadFromDisk() {
+  try {
+    const raw = JSON.parse(fs.readFileSync(FILE, "utf-8"));
+    for (const [phone, history] of Object.entries(raw)) {
+      store.set(phone, history);
+    }
+    console.log(`[memory] ${store.size} históricos carregados`);
+  } catch {
+    // file doesn't exist yet — start fresh
   }
+}
+
+function saveToDisk() {
+  const obj = {};
+  for (const [phone, history] of store.entries()) {
+    obj[phone] = history;
+  }
+  const data = JSON.stringify(obj);
+  _writeQueue = _writeQueue
+    .then(() => fs.promises.writeFile(FILE, data))
+    .catch(err => console.error("[memory] write error:", err.message));
+}
+
+loadFromDisk();
+
+function getHistory(phone) {
+  if (!store.has(phone)) store.set(phone, []);
   return store.get(phone);
 }
 
-/**
- * Appends a message to the user's history and trims to MAX_MESSAGES.
- *
- * @param {string} phone
- * @param {"user"|"assistant"} role
- * @param {string} content
- */
 function addMessage(phone, role, content) {
   const history = getHistory(phone);
   history.push({ role, content });
-
-  // Keep only the most recent messages to avoid unbounded growth
   if (history.length > MAX_MESSAGES) {
     history.splice(0, history.length - MAX_MESSAGES);
   }
+  saveToDisk();
 }
 
-/**
- * Clears history for a user (useful for testing or "restart" flows).
- *
- * @param {string} phone
- */
 function clearHistory(phone) {
   store.delete(phone);
+  saveToDisk();
 }
 
 module.exports = { getHistory, addMessage, clearHistory };
