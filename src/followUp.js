@@ -83,7 +83,13 @@ async function checkInactiveClients() {
     if (last.source === "followup") continue;
 
     const sentInfo = state[phone];
-    if (sentInfo && new Date(sentInfo.sentAt) > new Date(last.timestamp)) continue;
+    if (sentInfo) {
+      const hoursSinceSent = (now - new Date(sentInfo.sentAt).getTime()) / 3600000;
+      if (hoursSinceSent < SESSION_EXPIRY_HOURS) continue;
+      // Sessão expirou — limpa estado para permitir novo follow-up em nova sessão
+      delete state[phone];
+      saveState(state);
+    }
 
     try {
       const msg = buildMessage(last.source, last.name);
