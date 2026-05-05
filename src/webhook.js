@@ -16,7 +16,10 @@ const { addConversation } = require("./conversations");
 const { sendAlert } = require("./alerts");
 const { downloadWhatsAppMedia } = require("./media");
 const { maskPhone } = require("./utils");
-const { addMessage } = require("./memory");
+const { addMessage, clearHistory } = require("./memory");
+const { addFaqEntry } = require("./faqMatcher");
+
+const TRAINER_PHONE = process.env.TRAINER_PHONE || "";
 
 function truncate(s, n = 80) {
   if (!s) return "";
@@ -82,6 +85,48 @@ router.post("/", async (req, res) => {
   }
 });
 
+// ── Trainer commands (owner only) ─────────────────────────────
+async function handleTrainerCommand(phone, text) {
+  const cmd = text.trim();
+
+  if (cmd === "!help") {
+    await sendMessage(phone,
+      "*Comandos do modo treino:*\n\n" +
+      "`!add pergunta | resposta` — adiciona entrada no FAQ\n" +
+      "`!reset` — limpa histórico desta conversa\n" +
+      "`!help` — mostra este menu\n\n" +
+      "Mensagens normais são tratadas como cliente (para testes)."
+    );
+    return true;
+  }
+
+  if (cmd === "!reset") {
+    clearHistory(phone);
+    await sendMessage(phone, "✅ Histórico limpo.");
+    return true;
+  }
+
+  if (cmd.startsWith("!add ")) {
+    const parts = cmd.slice(5).split("|");
+    if (parts.length < 2) {
+      await sendMessage(phone, "❌ Formato: `!add pergunta | resposta`");
+      return true;
+    }
+    const pergunta = parts[0].trim();
+    const resposta = parts.slice(1).join("|").trim();
+    addFaqEntry(pergunta, resposta);
+    await sendMessage(phone, `✅ FAQ adicionado:\n\n*P:* ${pergunta}\n*R:* ${resposta}`);
+    return true;
+  }
+
+  if (cmd.startsWith("!")) {
+    await sendMessage(phone, "❓ Comando não reconhecido. Use `!help` para ver os disponíveis.");
+    return true;
+  }
+
+  return false; // not a command — process as normal message
+}
+
 // ── Per-message processing ────────────────────────────────────
 async function processIncoming(message, contact) {
   if (!message) return;
@@ -124,6 +169,13 @@ async function processIncoming(message, contact) {
 
   const logPreview = image ? `[imagem] ${truncate(text) || "(sem legenda)"}` : truncate(text);
   console.log(`[webhook] Message from ${maskPhone(phone)}: "${logPreview}"`);
+
+  // Trainer mode: owner can send !commands to teach the bot
+  if (TRAINER_PHONE && phone === TRAINER_PHONE && !image) {
+    const handled = await handleTrainerCommand(phone, text);
+    if (handled) return;
+    // Not a command — fall through to normal bot response (for testing)
+  }
 
   const { reply, source } = await handleMessage(phone, text, image);
   await sendMessage(phone, reply);
