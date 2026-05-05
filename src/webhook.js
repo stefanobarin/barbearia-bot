@@ -91,24 +91,45 @@ router.post("/", async (req, res) => {
   }
 });
 
+// ── Trainer state (last question per trainer phone) ───────────
+const trainerLastQuestion = new Map();
+
 // ── Trainer commands (owner only) ─────────────────────────────
 async function handleTrainerCommand(phone, text) {
   const cmd = text.trim();
 
   if (cmd === "!help") {
     await sendMessage(phone,
-      "*Comandos do modo treino:*\n\n" +
-      "`!add pergunta | resposta` — adiciona entrada no FAQ\n" +
-      "`!reset` — limpa histórico desta conversa\n" +
-      "`!help` — mostra este menu\n\n" +
-      "Mensagens normais são tratadas como cliente (para testes)."
+      "*Modo treino ativo* 🎓\n\n" +
+      "*Fluxo intuitivo:*\n" +
+      "1. Manda pergunta como se fosse cliente\n" +
+      "2. Bot responde\n" +
+      "3. Se errou, manda: `!fix resposta certa`\n\n" +
+      "*Outros comandos:*\n" +
+      "`!add pergunta | resposta` — adiciona direto ao FAQ\n" +
+      "`!reset` — limpa histórico\n" +
+      "`!help` — este menu"
     );
     return true;
   }
 
   if (cmd === "!reset") {
     clearHistory(phone);
+    trainerLastQuestion.delete(phone);
     await sendMessage(phone, "✅ Histórico limpo.");
+    return true;
+  }
+
+  if (cmd.startsWith("!fix ")) {
+    const resposta = cmd.slice(5).trim();
+    const pergunta = trainerLastQuestion.get(phone);
+    if (!pergunta) {
+      await sendMessage(phone, "❌ Manda primeiro a pergunta de teste, depois `!fix` com a resposta certa.");
+      return true;
+    }
+    addFaqEntry(pergunta, resposta);
+    trainerLastQuestion.delete(phone);
+    await sendMessage(phone, `✅ Correção salva!\n\n*P:* ${pergunta}\n*R:* ${resposta}`);
     return true;
   }
 
@@ -126,11 +147,13 @@ async function handleTrainerCommand(phone, text) {
   }
 
   if (cmd.startsWith("!")) {
-    await sendMessage(phone, "❓ Comando não reconhecido. Use `!help` para ver os disponíveis.");
+    await sendMessage(phone, "❓ Comando não reconhecido. Use `!help`.");
     return true;
   }
 
-  return false; // not a command — process as normal message
+  // Not a command — track as last question for !fix, then process normally
+  trainerLastQuestion.set(phone, cmd);
+  return false;
 }
 
 // ── Per-message processing ────────────────────────────────────
