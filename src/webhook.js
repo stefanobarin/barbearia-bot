@@ -19,7 +19,10 @@ const { maskPhone } = require("./utils");
 const { addMessage, clearHistory } = require("./memory");
 const { addFaqEntry } = require("./faqMatcher");
 
-const TRAINER_PHONE = process.env.TRAINER_PHONE || "";
+const TRAINER_PHONES = new Set(
+  (process.env.TRAINER_PHONES || process.env.TRAINER_PHONE || "")
+    .split(",").map(p => p.trim()).filter(Boolean)
+);
 
 function truncate(s, n = 80) {
   if (!s) return "";
@@ -171,7 +174,7 @@ async function processIncoming(message, contact) {
   console.log(`[webhook] Message from ${maskPhone(phone)}: "${logPreview}"`);
 
   // Trainer mode: owner can send !commands to teach the bot
-  if (TRAINER_PHONE && phone === TRAINER_PHONE && !image) {
+  if (TRAINER_PHONES.size > 0 && TRAINER_PHONES.has(phone) && !image) {
     const handled = await handleTrainerCommand(phone, text);
     if (handled) return;
     // Not a command — fall through to normal bot response (for testing)
