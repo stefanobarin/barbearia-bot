@@ -1,122 +1,122 @@
 [
   {
     "pergunta": "vocês aceitam cartão",
-    "resposta": "Pode vir tranquilo! 💳 Aceitamos cartão (débito e crédito), Pix e dinheiro."
+    "resposta": "Pode vir tranquilo! Aceitamos cartão (débito e crédito), Pix e dinheiro."
   },
   {
     "pergunta": "tem estacionamento",
-    "resposta": "Tem sim! 🚗 Tem estacionamento gratuito ao lado da barbearia, e a galeria também oferece. Sem stress pra estacionar."
+    "resposta": "Tem sim! Estacionamento gratuito ao lado da barbearia e na galeria também."
   },
   {
     "pergunta": "qual o endereço",
-    "resposta": "Estamos na Rua Luiz Otávio, 2625 — Fazenda Santa Cândida, Campinas/SP. 📍\n👉 https://maps.google.com/?q=Rua+Luiz+Otávio,+2625,+Fazenda+Santa+Cândida,+Campinas,+SP\n\nTe esperamos por aqui!"
+    "resposta": "Rua Luiz Otávio, 2625 — Fazenda Santa Cândida, Campinas/SP.\nhttps://maps.google.com/?q=Rua+Luiz+Otávio,+2625,+Fazenda+Santa+Cândida,+Campinas,+SP"
   },
   {
     "pergunta": "como chegar",
-    "resposta": "É fácil! Rua Luiz Otávio, 2625 — Fazenda Santa Cândida, Campinas/SP.\n📍 Abre direto no Maps: https://maps.google.com/?q=Rua+Luiz+Otávio,+2625,+Fazenda+Santa+Cândida,+Campinas,+SP"
+    "resposta": "Rua Luiz Otávio, 2625 — Fazenda Santa Cândida, Campinas/SP.\nhttps://maps.google.com/?q=Rua+Luiz+Otávio,+2625,+Fazenda+Santa+Cândida,+Campinas,+SP"
   },
   {
     "pergunta": "qual o horário de funcionamento",
-    "resposta": "Nosso horário:\n📅 Seg a Qui: 10h às 20h20\n📅 Sexta: 9h às 20h20\n📅 Sábado: 9h às 17h30\n📅 Domingo: 9h às 13h30\n❌ Feriados: fechado\n\nQuer marcar um horário? 😉"
+    "resposta": "Seg a Qui: 10h às 20h20. Sexta: 9h às 20h20. Sábado: 9h às 17h30. Domingo: 9h às 13h30. Feriados: fechado."
   },
   {
     "pergunta": "abre domingo",
-    "resposta": "Abrimos sim! 🙌 Domingo das 9h às 13h30. Bora aproveitar o fim de semana?"
+    "resposta": "Abrimos sim! Domingo das 9h às 13h30."
   },
   {
     "pergunta": "abre feriado",
-    "resposta": "Em feriados a gente fecha pra descansar a equipe. 🙏 Mas qualquer dúvida sobre horários especiais, é só perguntar."
+    "resposta": "Em feriados fechamos para descanso da equipe."
   },
   {
     "pergunta": "quantos barbeiros tem",
-    "resposta": "Temos 5 barbeiros prontos pra te atender. ✂️ Cada um com seu estilo, mas todos com a mesma qualidade!"
+    "resposta": "Temos 5 barbeiros. Cada um com seu estilo, todos com a mesma qualidade."
   },
   {
     "pergunta": "quanto custa o corte",
-    "resposta": "Corte avulso sai por R$55. ✂️"
+    "resposta": "Corte avulso: R$55."
   },
   {
     "pergunta": "quanto custa a barba",
-    "resposta": "Barba avulsa: R$50. 🪒 Feita com capricho, do jeito que você gosta."
+    "resposta": "Barba avulsa: R$50."
   },
   {
     "pergunta": "quanto custa corte e barba",
-    "resposta": "Combo corte + barba sai por R$105. 💈 É a opção que a maioria pede!"
+    "resposta": "Combo corte + barba: R$105."
   },
   {
     "pergunta": "quanto custa sobrancelha",
-    "resposta": "Design de sobrancelha: R$25. 🪒 Costuma ser feita junto com o corte ou barba."
+    "resposta": "Design de sobrancelha: R$25."
   },
   {
     "pergunta": "tem hidratação",
-    "resposta": "Tem sim! 💧 Hidratação capilar por R$60. Cabelo fica com aquela vida nova."
+    "resposta": "Tem sim! Hidratação capilar por R$60."
   },
   {
     "pergunta": "higienização nasal",
-    "resposta": "Tem sim, faz parte do tratamento completo. 👃 Higienização nasal com cera: R$30."
+    "resposta": "Tem sim. Higienização nasal com cera: R$30."
   },
   {
     "pergunta": "tabela de preços",
-    "resposta": "Nossa tabela:\n\n✂️ Corte — R$55\n🪒 Barba — R$50\n💈 Combo (corte + barba) — R$105\n🪒 Sobrancelha — R$25\n💧 Hidratação — R$60\n👃 Higienização nasal — R$30\n\nQuer agendar? 😊"
+    "resposta": "Nossa tabela:\n\n✂️ Corte — R$55\n🪒 Barba — R$50\n💈 Combo (corte + barba) — R$105\n🪒 Sobrancelha — R$25\n💧 Hidratação — R$60\n👃 Higienização nasal — R$30"
   },
   {
     "pergunta": "quanto tempo demora o corte",
-    "resposta": "Em média 30 minutinhos pro corte. ⏱️ Combo (corte + barba) leva uns 50 minutos. Tempinho perfeito pra relaxar."
+    "resposta": "Uns 30 minutos pro corte. Combo (corte + barba) leva uns 50 minutos."
   },
   {
     "pergunta": "quanto tempo demora a barba",
-    "resposta": "A barba leva uns 20 a 25 minutos. 🪒 É feita com calma, do jeito que merece."
+    "resposta": "A barba leva uns 20 a 25 minutos."
   },
   {
     "pergunta": "tem wifi",
-    "resposta": "Tem sim! 📶 Wi-Fi gratuito pra você ficar conectado enquanto a gente capricha no visual."
+    "resposta": "Tem sim! Wi-Fi gratuito."
   },
   {
     "pergunta": "aceitam crianças",
-    "resposta": "Aceitamos sim! 👦 Atendemos qualquer idade. Pode trazer o pequeno de boa."
+    "resposta": "Atendemos qualquer idade. Pode trazer o pequeno."
   },
   {
     "pergunta": "posso ir sem agendar",
-    "resposta": "Pode sim! 👌 Mas pra evitar fila e garantir seu horário, melhor agendar pelo link: https://cashbarber.com.br/baronelli/inicio"
+    "resposta": "Pode sim! Mas pra evitar fila e garantir horário, melhor agendar pelo link: https://cashbarber.com.br/baronelli/inicio"
   },
   {
     "pergunta": "planos mensais",
-    "resposta": "Temos planos mensais com cortes ilimitados! 💈 São opções pra quem se cuida sempre. Quer saber qual é o ideal pra você?"
+    "resposta": "Temos planos mensais pra quem vem com frequência:\n\n💈 Barba & Cabelo Ilimitado — R$264,90/mês\n✂️ Cabelo Ilimitado — R$174,90/mês\n🪒 Barba Ilimitado — R$109,90/mês\n💈 Clubinho Cabelo — R$128,37/mês (ilimitado seg/ter/qua, demais dias R$25)\n✂️ Essencial Cabelo — 2 cortes/mês"
   },
   {
     "pergunta": "plano barba e cabelo ilimitado",
-    "resposta": "🌟 *Plano Barba & Cabelo Ilimitado* — R$264,90/mês\n\nCabelo e barba sempre no ponto, sem se preocupar com preço a cada visita."
+    "resposta": "💈 *Plano Barba & Cabelo Ilimitado* — R$264,90/mês\n\nCabelo e barba sempre no ponto, sem se preocupar com preço a cada visita."
   },
   {
     "pergunta": "plano cabelo ilimitado",
-    "resposta": "✂️ *Plano Cabelo Ilimitado* — R$174,90/mês\n\nCorte sempre que quiser, sem limite. Pra quem gosta de manter o visual em dia."
+    "resposta": "✂️ *Plano Cabelo Ilimitado* — R$174,90/mês\n\nCorte sempre que quiser, sem limite."
   },
   {
     "pergunta": "plano barba ilimitado",
-    "resposta": "🪒 *Plano Barba Ilimitado* — R$109,90/mês\n\nBarba sempre alinhada, quantas vezes você precisar."
+    "resposta": "🪒 *Plano Barba Ilimitado* — R$109,90/mês\n\nBarba sempre alinhada, quantas vezes precisar."
   },
   {
     "pergunta": "plano clubinho",
-    "resposta": "💈 *Plano Clubinho Cabelo* — R$128,37/mês\n\n• Cortes ilimitados de segunda a quarta\n• Nos outros dias, corte sai por R$25\n\nÓtimo pra quem tem rotina flexível!"
+    "resposta": "💈 *Plano Clubinho Cabelo* — R$128,37/mês\n\nCortes ilimitados de segunda a quarta. Nos outros dias, R$25 por corte."
   },
   {
     "pergunta": "plano essencial cabelo",
-    "resposta": "✂️ *Plano Essencial Cabelo*\n\nDireito a 2 cortes por mês. Quer mais detalhes? Posso passar pra equipe te explicar direitinho."
+    "resposta": "✂️ *Plano Essencial Cabelo* — 2 cortes por mês. Quer mais detalhes? Chama um atendente."
   },
   {
     "pergunta": "primeira vez",
-    "resposta": "Que bom ter você por aqui! 🎉 Cliente novo paga R$39,90 no corte na primeira visita — só agendar com 1 dia de antecedência. Bora marcar?"
+    "resposta": "Cliente novo paga R$39,90 no corte na primeira visita — só agendar com 1 dia de antecedência."
   },
   {
     "pergunta": "desconto cliente novo",
-    "resposta": "Sim! 🎉 Primeiro corte sai por R$39,90 (agendando com 1 dia de antecedência). Aproveita!"
+    "resposta": "Primeiro corte sai por R$39,90 agendando com 1 dia de antecedência."
   },
   {
     "pergunta": "como agendar",
-    "resposta": "Agendar é rapidinho! 📲 É só usar o link: https://cashbarber.com.br/baronelli/inicio\n\nEscolhe o barbeiro, dia e horário."
+    "resposta": "Só usar o link: https://cashbarber.com.br/baronelli/inicio\n\nEscolhe o barbeiro, dia e horário."
   },
   {
     "pergunta": "qual barbeiro escolher",
-    "resposta": "Todos os 5 barbeiros são feras! ✂️ No app de agendamento você consegue ver os horários disponíveis de cada um. Se for primeira vez, qualquer um te atende com qualidade."
+    "resposta": "Todos os 5 são ótimos. No agendamento você vê a disponibilidade de cada um. Primeira vez, qualquer um te atende bem."
   }
 ]
