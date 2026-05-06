@@ -9,7 +9,8 @@
 // ─────────────────────────────────────────────────────────────
 const axios = require("axios");
 
-const BASE_URL = "https://graph.facebook.com/v19.0";
+const API_VERSION = process.env.GRAPH_API_VERSION || "v21.0";
+const BASE_URL = `https://graph.facebook.com/${API_VERSION}`;
 const MAX_RETRIES = 3;
 const TIMEOUT_MS  = 10000;
 

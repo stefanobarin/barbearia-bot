@@ -104,7 +104,7 @@ app.get("/health", (_req, res) => {
 // ── Graceful shutdown ──────────────────────────────────────────
 function shutdown(signal) {
   console.log(`[server] ${signal} recebido — aguardando writes pendentes...`);
-  setTimeout(() => process.exit(0), 1000);
+  setTimeout(() => process.exit(0), 3000);
 }
 process.on("SIGTERM", () => shutdown("SIGTERM"));
 process.on("SIGINT",  () => shutdown("SIGINT"));

@@ -571,7 +571,7 @@ async function aiReply(phone, text, image = null, isFirstContact = false) {
   try {
     const response = await Promise.race([
       client.messages.create({
-        model: "claude-haiku-4-5-20251001",
+        model: process.env.AI_MODEL || "claude-haiku-4-5-20251001",
         max_tokens: 256,
         system: [{ type: "text", text: buildSystemPrompt(isFirstContact), cache_control: { type: "ephemeral" } }],
         messages: apiMessages,

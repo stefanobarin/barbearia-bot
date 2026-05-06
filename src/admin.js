@@ -227,17 +227,10 @@ function formatDate(iso) {
 
 function sourceLabel(s) {
   const map = {
-    human: "👤 Humano",
-    ai: "🤖 IA",
+    human:     "👤 Humano",
+    ai:        "🤖 IA",
     ai_vision: "📸 IA + Imagem",
-    faq: "📋 FAQ",
-    booking: "📅 Agendamento",
-    prices: "💰 Preços",
-    greeting: "👋 Saudação",
-    services: "✂️ Serviços",
-    hours: "🕐 Horário",
-    location: "📍 Localização",
-    followup: "🔔 Follow-up",
+    followup:  "🔔 Follow-up",
   };
   return map[s] || s;
 }
@@ -701,6 +694,7 @@ router.get("/", (req, res) => {
     <nav class="header-nav">
       <a href="/admin" class="nav-btn active">Conversas</a>
       <a href="/admin/faq" class="nav-btn">FAQ</a>
+      <a href="/admin/export/conversations" class="nav-btn" download>Export</a>
       <a href="/admin/logout" class="nav-btn" style="opacity:0.6">Sair</a>
     </nav>
   </header>
@@ -765,11 +759,7 @@ router.get("/", (req, res) => {
         <option value="">Todas as fontes</option>
         <option value="ai">🤖 IA</option>
         <option value="ai_vision">📸 IA + Imagem</option>
-        <option value="faq">📋 FAQ</option>
         <option value="human">👤 Humano</option>
-        <option value="booking">📅 Agendamento</option>
-        <option value="prices">💰 Preços</option>
-        <option value="greeting">👋 Saudação</option>
         <option value="followup">🔔 Follow-up</option>
       </select>
       <div class="search-wrap">
@@ -994,6 +984,15 @@ router.post("/faq", express.urlencoded({ extended: false, limit: "10kb" }), (req
     addFaqEntry(pergunta, resposta);
   }
   res.redirect("/admin/faq?msg=Entrada adicionada com sucesso!");
+});
+
+// ── Export conversas ──────────────────────────────────────────
+router.get("/export/conversations", (_req, res) => {
+  const data = getAll();
+  const date = new Date().toISOString().slice(0, 10);
+  res.setHeader("Content-Type", "application/json; charset=utf-8");
+  res.setHeader("Content-Disposition", `attachment; filename="conversations-${date}.json"`);
+  res.send(JSON.stringify(data, null, 2));
 });
 
 // ── Teste de alerta ───────────────────────────────────────────

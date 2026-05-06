@@ -16,8 +16,7 @@ function buildReport() {
   const uniqueClients = new Set(today.map((c) => c.phone)).size;
   const escalations = today.filter((c) => c.source === "human").length;
   const aiAnswers = today.filter((c) => c.source === "ai" || c.source === "ai_vision").length;
-  const bookings = today.filter((c) => c.source === "booking").length;
-  const prices = today.filter((c) => c.source === "prices").length;
+  const newClients = today.filter((c) => c.source === "ai" && c.reply && c.reply.includes("primeira vez")).length;
 
   const date = new Date().toLocaleDateString("pt-BR", {
     timeZone: "America/Sao_Paulo",
@@ -36,8 +35,6 @@ function buildReport() {
     `📊 *Resumo do bot — ${date}*\n\n` +
     `💬 ${total} mensagens recebidas\n` +
     `👥 ${uniqueClients} clientes diferentes\n` +
-    `💰 ${prices} perguntaram preço\n` +
-    `📅 ${bookings} pediram agendamento\n` +
     `🤖 ${aiAnswers} respondidas pela IA\n` +
     `🆘 ${escalations} pediram atendente humano` +
     tokenLine

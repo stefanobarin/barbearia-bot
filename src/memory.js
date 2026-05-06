@@ -9,7 +9,7 @@ const path = require("path");
 
 const DATA_DIR  = process.env.DATA_DIR || path.join(__dirname, "..");
 const FILE      = path.join(DATA_DIR, "memory.json");
-const MAX_MESSAGES = 10; // last 10 turns per user (5 exchanges)
+const MAX_MESSAGES = 20; // last 20 turns per user (10 exchanges)
 
 // Map<phone, Array<{role, content}>>
 let store = new Map();

@@ -11,7 +11,7 @@ const router = express.Router();
 const { classifyIntent, buildReply } = require("./intentClassifier");
 const { aiReply } = require("./aiReply");
 const { sendMessage } = require("./whatsapp");
-const { addConversation, byPhone } = require("./conversations");
+const { addConversation, hasPhone } = require("./conversations");
 const { sendAlert } = require("./alerts");
 const { downloadWhatsAppMedia } = require("./media");
 const { maskPhone } = require("./utils");
@@ -24,6 +24,42 @@ const TRAINER_PHONES = new Set(
 );
 if (TRAINER_PHONES.size > 0) {
   console.log(`[webhook] Trainer phones: ${[...TRAINER_PHONES].join(", ")}`);
+}
+
+// ── Message deduplication (Meta can retry on timeout) ─────────
+const DEDUP_TTL_MS = 2 * 60 * 1000;
+const seenMsgIds   = new Map(); // msgId → timestamp
+
+function isDuplicate(msgId) {
+  if (!msgId) return false;
+  const now = Date.now();
+  // Purge expired entries
+  for (const [id, ts] of seenMsgIds) {
+    if (now - ts > DEDUP_TTL_MS) seenMsgIds.delete(id);
+  }
+  if (seenMsgIds.has(msgId)) return true;
+  seenMsgIds.set(msgId, now);
+  return false;
+}
+
+// ── Per-phone throttle (prevent rapid-fire spam) ──────────────
+const PHONE_THROTTLE_MS = parseInt(process.env.PHONE_THROTTLE_MS, 10) || 1500;
+const phoneLastMsg       = new Map(); // phone → timestamp
+
+function isThrottled(phone) {
+  const now  = Date.now();
+  const last = phoneLastMsg.get(phone) || 0;
+  if (now - last < PHONE_THROTTLE_MS) return true;
+  phoneLastMsg.set(phone, now);
+  return false;
+}
+
+// ── Input truncation ──────────────────────────────────────────
+const MAX_INPUT_CHARS = parseInt(process.env.MAX_INPUT_CHARS, 10) || 800;
+
+function truncateInput(text) {
+  if (!text || text.length <= MAX_INPUT_CHARS) return text;
+  return text.slice(0, MAX_INPUT_CHARS) + "…";
 }
 
 function truncate(s, n = 80) {
@@ -80,6 +116,10 @@ router.post("/", async (req, res) => {
 
       for (let i = 0; i < messages.length; i++) {
         const message = messages[i];
+        if (isDuplicate(message.id)) {
+          console.log(`[webhook] Duplicate message ${message.id} — skipped`);
+          continue;
+        }
         const contact = contacts.find(c => c.wa_id === message.from) || contacts[i] || contacts[0];
         processIncoming(message, contact).catch((err) => {
           console.error("[webhook] Error processing message:", err.message);
@@ -165,8 +205,13 @@ async function processIncoming(message, contact) {
   let text = "";
   let image = null;
 
+  if (isThrottled(phone)) {
+    console.log(`[webhook] Throttled ${maskPhone(phone)} — skipped`);
+    return;
+  }
+
   if (message.type === "text") {
-    text = message.text.body.trim();
+    text = truncateInput(message.text.body.trim());
   } else if (message.type === "image") {
     const mediaId = message.image?.id;
     const caption = message.image?.caption?.trim() || "";
@@ -230,7 +275,7 @@ async function processIncoming(message, contact) {
 
 // ── Core message-handling logic ───────────────────────────────
 async function handleMessage(phone, text, image = null) {
-  const isFirstContact = byPhone(phone).length === 0;
+  const isFirstContact = !hasPhone(phone);
 
   if (image) {
     const aiAnswer = await aiReply(phone, text, image, isFirstContact);
