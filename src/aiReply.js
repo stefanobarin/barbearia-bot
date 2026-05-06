@@ -18,8 +18,29 @@ const client = new Anthropic.default({
 });
 
 // ── System prompt (montado em tempo de execução para incluir o FAQ) ──
-function buildSystemPrompt() {
-  return `
+function buildSystemPrompt(isFirstContact = false) {
+  const firstContactBlock = isFirstContact ? `
+╔═══════════════════════════════════════════════════════════════════════════╗
+║ PRIMEIRA MENSAGEM DESTE CLIENTE — AÇÃO OBRIGATÓRIA:                     ║
+╚═══════════════════════════════════════════════════════════════════════════╝
+
+Esta é a PRIMEIRA vez que este cliente fala conosco.
+
+ANTES de responder qualquer dúvida, pergunte:
+  "Oi! Você já é cliente ou é sua primeira vez aqui?"
+
+Você pode responder a dúvida na mesma mensagem se for simples:
+  ✅ "Oi! Você já é cliente ou é sua primeira vez? Corte avulso é R$55."
+  ✅ "Oi! Primeira vez por aqui? Funcionamos seg a qui 10h–20h20."
+  ❌ NUNCA ignore esta pergunta na primeira mensagem.
+  ❌ NUNCA repita esta pergunta em mensagens seguintes — só na primeira.
+
+Se responder que é CLIENTE NOVO: informe sobre o corte especial R$39,90
+  (só agendar com 1 dia de antecedência). Combo com barba: R$89,90 (R$39,90 + R$50).
+
+` : "";
+
+  return `${firstContactBlock}
 Você é o recepcionista virtual da *Barbearia Baronelli* — barbearia em Campinas/SP. Atende clientes 24h pelo WhatsApp.
 
 ╔═══════════════════════════════════════════════════════════════════════════╗
@@ -332,7 +353,11 @@ Rua Luiz Otávio, 2625 — Fazenda Santa Cândida, Campinas/SP
 
 📅 Agendamento: ${process.env.BOOKING_LINK || "https://cashbarber.com.br/baronelli"}
 
-🎉 Primeira vez: cliente novo paga R$39,90 no corte (agendando com 1 dia de antecedência)
+🎉 Primeira vez:
+- Corte: R$39,90 (agendando com 1 dia de antecedência)
+- Barba avulsa: R$50 (sem desconto)
+- Combo corte + barba cliente novo: R$89,90 (R$39,90 + R$50) — NÃO é R$105
+- Hidratação, sobrancelha, higienização: preço normal
 
 💈 Planos mensais:
 - Barba & Cabelo Ilimitado: R$264,90/mês
@@ -507,9 +532,10 @@ Se respondeu SIM a tudo, pode enviar. Se respondeu NÃO a qualquer um, reescreva
  * @param {string} phone  — user's phone number (used as history key)
  * @param {string} text   — the user's message (legenda se for imagem)
  * @param {object} [image] — opcional: { data: base64, mimeType: string }
+ * @param {boolean} [isFirstContact] — true if this phone has never contacted before
  * @returns {Promise<string>}
  */
-async function aiReply(phone, text, image = null) {
+async function aiReply(phone, text, image = null, isFirstContact = false) {
   // Monta o conteúdo da mensagem (texto puro ou multimodal com imagem)
   let userContent;
   if (image) {
@@ -547,7 +573,7 @@ async function aiReply(phone, text, image = null) {
       client.messages.create({
         model: "claude-haiku-4-5-20251001",
         max_tokens: 256,
-        system: [{ type: "text", text: buildSystemPrompt(), cache_control: { type: "ephemeral" } }],
+        system: [{ type: "text", text: buildSystemPrompt(isFirstContact), cache_control: { type: "ephemeral" } }],
         messages: apiMessages,
       }),
       new Promise((_, reject) => {

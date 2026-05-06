@@ -9,10 +9,9 @@ const crypto = require("crypto");
 const router = express.Router();
 
 const { classifyIntent, buildReply } = require("./intentClassifier");
-// faqMatcher não é mais usado no pipeline — FAQ injetado no system prompt do Claude
 const { aiReply } = require("./aiReply");
 const { sendMessage } = require("./whatsapp");
-const { addConversation } = require("./conversations");
+const { addConversation, byPhone } = require("./conversations");
 const { sendAlert } = require("./alerts");
 const { downloadWhatsAppMedia } = require("./media");
 const { maskPhone } = require("./utils");
@@ -231,8 +230,10 @@ async function processIncoming(message, contact) {
 
 // ── Core message-handling logic ───────────────────────────────
 async function handleMessage(phone, text, image = null) {
+  const isFirstContact = byPhone(phone).length === 0;
+
   if (image) {
-    const aiAnswer = await aiReply(phone, text, image);
+    const aiAnswer = await aiReply(phone, text, image, isFirstContact);
     return { reply: aiAnswer, source: "ai_vision" };
   }
 
@@ -246,7 +247,7 @@ async function handleMessage(phone, text, image = null) {
   }
 
   // Tudo o mais vai direto pro Claude
-  const aiAnswer = await aiReply(phone, text);
+  const aiAnswer = await aiReply(phone, text, null, isFirstContact);
   return { reply: aiAnswer, source: "ai" };
 }
 
