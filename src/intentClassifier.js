@@ -23,7 +23,11 @@ const HUMAN_KEYWORDS = [
 const HUMAN_REPLY =
   "Claro! Contato direto da barbearia:\n\n" +
   "*(19) 99855-0168*\n\n" +
-  "Seg a Qui 10h–20h20, Sexta 9h–20h20, Sábado 9h–17h30, Domingo 9h–13h30";
+  "Horário:\n" +
+  "Seg a Qui: 10h às 20h20\n" +
+  "Sexta: 9h às 20h20\n" +
+  "Sábado: 9h às 17h30\n" +
+  "Domingo: 9h às 13h30";
 
 function classifyIntent(text) {
   const normalized = text.toLowerCase().trim();
