@@ -652,6 +652,8 @@ async function aiReply(phone, text, image = null, isFirstContact = false, client
     const status = err.status || err.response?.status;
     if (status === 401) {
       sendAlert("ai_auth", `❌ ANTHROPIC_API_KEY inválida.\n\n*Ação:* atualize a chave no Railway.`);
+    } else if (status === 402) {
+      sendAlert("ai_credits", `💳 Crédito Anthropic esgotado (HTTP 402).\n\n*Ação:* adicione crédito em console.anthropic.com`);
     } else if (status === 429) {
       sendAlert("ai_rate_limit", `⚠️ IA atingiu limite de uso (HTTP 429). Cliente recebeu fallback.`);
     } else if (status >= 500) {
