@@ -730,16 +730,18 @@ router.get("/", (req, res) => {
           <span class="label">Respostas por IA ↗</span>
         </div>
       </div>
-      <a href="https://platform.claude.com/settings/billing" target="_blank" rel="noopener" style="text-decoration:none;">
-      <div class="stat-card teal" style="cursor:pointer;" title="Abrir Anthropic Console">
+      <div class="stat-card teal">
         <div class="stat-icon teal">🧠</div>
         <div class="stat-body">
           <span class="value">${formatTokens(tokens.today.total) || "0"}</span>
-          <span class="label">Tokens hoje ↗</span>
+          <span class="label">Tokens hoje</span>
           <span class="stat-sublabel">$${tokens.today.costUSD.toFixed(3)} · total: ${formatTokens(tokens.allTime.total)}</span>
+          <a href="https://platform.claude.com/settings/billing" target="_blank" rel="noopener"
+             style="display:inline-block;margin-top:6px;padding:3px 10px;background:#0d9488;color:#fff;border-radius:4px;font-size:11px;text-decoration:none;">
+            Anthropic Billing ↗
+          </a>
         </div>
       </div>
-      </a>
       <div class="stat-card ${diskColor}">
         <div class="stat-icon ${diskColor}">💾</div>
         <div class="stat-body">
