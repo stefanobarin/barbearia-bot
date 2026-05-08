@@ -730,14 +730,16 @@ router.get("/", (req, res) => {
           <span class="label">Respostas por IA ↗</span>
         </div>
       </div>
-      <div class="stat-card teal">
+      <a href="https://console.anthropic.com" target="_blank" rel="noopener" style="text-decoration:none;">
+      <div class="stat-card teal" style="cursor:pointer;" title="Abrir Anthropic Console">
         <div class="stat-icon teal">🧠</div>
         <div class="stat-body">
           <span class="value">${formatTokens(tokens.today.total) || "0"}</span>
-          <span class="label">Tokens hoje</span>
+          <span class="label">Tokens hoje ↗</span>
           <span class="stat-sublabel">$${tokens.today.costUSD.toFixed(3)} · total: ${formatTokens(tokens.allTime.total)}</span>
         </div>
       </div>
+      </a>
       <div class="stat-card ${diskColor}">
         <div class="stat-icon ${diskColor}">💾</div>
         <div class="stat-body">
