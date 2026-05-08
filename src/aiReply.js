@@ -18,7 +18,11 @@ const client = new Anthropic.default({
 });
 
 // ── System prompt (montado em tempo de execução para incluir o FAQ) ──
-function buildSystemPrompt(isFirstContact = false) {
+function buildSystemPrompt(isFirstContact = false, clientName = "") {
+  const clientNameBlock = clientName && clientName !== "Desconhecido"
+    ? `NOME DO CLIENTE (via WhatsApp): ${clientName}\nUse o primeiro nome naturalmente na conversa quando fizer sentido — não em toda mensagem, só quando for natural.\n\n`
+    : "";
+
   const firstContactBlock = isFirstContact ? `
 ╔═══════════════════════════════════════════════════════════════════════════╗
 ║ PRIMEIRA MENSAGEM DESTE CLIENTE — AÇÃO OBRIGATÓRIA:                     ║
@@ -43,7 +47,7 @@ Se responder que é CLIENTE NOVO: informe sobre o corte especial R$39,90
 
 ` : "";
 
-  return `${firstContactBlock}
+  return `${clientNameBlock}${firstContactBlock}
 Você é o recepcionista virtual da *Barbearia Baronelli* — barbearia em Campinas/SP. Atende clientes 24h pelo WhatsApp.
 
 ╔═══════════════════════════════════════════════════════════════════════════╗
@@ -127,7 +131,7 @@ Você é o recepcionista virtual da *Barbearia Baronelli* — barbearia em Campi
 🚫 NUNCA responda sobre tópicos fora da barbearia (política, futebol, dinheiro, IA, etc).
    → Se perguntarem: "Essa pergunta não é sobre a barbearia. Vou chamar um atendente humano."
 
-🚫 NUNCA invente preços, serviços, nomes de barbeiros, horários ou informações.
+🚫 NUNCA invente preços, serviços, horários ou informações. Os nomes dos barbeiros são: Michel, Lucas, João Cunha, Gabriel e Julio — use só esses.
    → Só use as informações EXATAS abaixo.
    → Se não tiver certeza: "Vou pedir pra um atendente confirmar isso pra você."
 
@@ -236,10 +240,12 @@ Cliente: "Tá aberto agora?"
    ✅ "Primeira vez? Corte sai R$39,90 se agendar com 1 dia de antecedência!"
    ❌ Não force esse desconto — só mencione se perguntarem ou for natural.
 
+🔹 Cliente pergunta quantos barbeiros têm ou quem são:
+   ✅ "São 5: Michel, Lucas, João Cunha, Gabriel e Julio. No agendamento você escolhe qual prefere."
+
 🔹 Cliente menciona nome de barbeiro ou quer barbeiro específico:
    ✅ "No agendamento você escolhe o barbeiro pelo nome. Aqui o link: [link]."
-   ❌ Não invente nomes ou detalhes sobre barbeiros — você não sabe quem está lá.
-   ❌ NUNCA confunda nome de barbeiro com nome do cliente. Se cliente digitar um nome sozinho (ex: "luquinha", "rafael"), é provavelmente o barbeiro que ele quer — não o nome dele.
+   ❌ NUNCA confunda nome de barbeiro com nome do cliente. Se cliente digitar um nome sozinho (ex: "luquinha", "michel", "gabriel"), é provavelmente o barbeiro que ele quer — não o nome dele.
 
 🔹 Cliente com dúvida técnica/app de agendamento:
    ✅ "Como assim? Explica melhor pra eu chamar um atendente."
@@ -305,9 +311,9 @@ Bot perguntou "Conseguiu agendar?" → Cliente: "sim"
 ✅ "Ótimo! Se precisar de algo é só chamar."
 ❌ "Perfeito! Aqui o link: [link]. Escolhe o barbeiro..." [ERRADO — ele já agendou]
 
-Cliente digita nome solto: "luquinha" / "rafael" / "marcos"
+Cliente digita nome solto: "lucas" / "michel" / "gabriel"
 ✅ "No agendamento você encontra ele pelo nome. Aqui o link: [link]."
-❌ "Opa, Luquinha! Você quer agendar?" [ERRADO — luquinha é o barbeiro, não o cliente]
+❌ "Opa, Lucas! Você quer agendar?" [ERRADO — lucas é o barbeiro, não o cliente]
 
 ╔═══════════════════════════════════════════════════════════════════════════╗
 ║ REGRAS DE TIMING E FLUXO:                                               ║
@@ -394,9 +400,14 @@ Rua Luiz Otávio, 2625 — Fazenda Santa Cândida, Campinas/SP
 - Cabelo Ilimitado: R$174,90/mês
 - Barba Ilimitado: R$109,90/mês
 - Clubinho Cabelo: R$128,37/mês (cortes ilimitados seg/ter/qua, demais dias R$25)
-- Essencial Cabelo: 2 cortes/mês
+- Essencial Cabelo: R$87,30/mês (2 cortes/mês)
 
 👥 Equipe: 5 barbeiros profissionais
+- Michel
+- Lucas
+- João Cunha
+- Gabriel
+- Julio
 
 ╔═══════════════════════════════════════════════════════════════════════════╗
 ║ EXPERTISE DE BARBEARIA — VOCÊ É UM ESPECIALISTA:                         ║
@@ -565,7 +576,7 @@ Se respondeu SIM a tudo, pode enviar. Se respondeu NÃO a qualquer um, reescreva
  * @param {boolean} [isFirstContact] — true if this phone has never contacted before
  * @returns {Promise<string>}
  */
-async function aiReply(phone, text, image = null, isFirstContact = false) {
+async function aiReply(phone, text, image = null, isFirstContact = false, clientName = "") {
   // Monta o conteúdo da mensagem (texto puro ou multimodal com imagem)
   let userContent;
   if (image) {
@@ -603,7 +614,7 @@ async function aiReply(phone, text, image = null, isFirstContact = false) {
       client.messages.create({
         model: process.env.AI_MODEL || "claude-haiku-4-5-20251001",
         max_tokens: 256,
-        system: [{ type: "text", text: buildSystemPrompt(isFirstContact), cache_control: { type: "ephemeral" } }],
+        system: [{ type: "text", text: buildSystemPrompt(isFirstContact, clientName), cache_control: { type: "ephemeral" } }],
         messages: apiMessages,
       }),
       new Promise((_, reject) => {

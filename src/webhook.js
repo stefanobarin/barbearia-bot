@@ -251,7 +251,7 @@ async function processIncoming(message, contact) {
     // Not a command — fall through to normal bot response (for testing)
   }
 
-  const { reply, source } = await handleMessage(phone, text, image);
+  const { reply, source } = await handleMessage(phone, text, image, name);
   await sendMessage(phone, reply);
   addConversation(phone, name, image ? `[imagem] ${text || "(sem legenda)"}` : text, reply, source);
 
@@ -274,11 +274,11 @@ async function processIncoming(message, contact) {
 }
 
 // ── Core message-handling logic ───────────────────────────────
-async function handleMessage(phone, text, image = null) {
+async function handleMessage(phone, text, image = null, clientName = "") {
   const isFirstContact = !hasPhone(phone);
 
   if (image) {
-    const aiAnswer = await aiReply(phone, text, image, isFirstContact);
+    const aiAnswer = await aiReply(phone, text, image, isFirstContact, clientName);
     return { reply: aiAnswer, source: "ai_vision" };
   }
 
@@ -292,7 +292,7 @@ async function handleMessage(phone, text, image = null) {
   }
 
   // Tudo o mais vai direto pro Claude
-  const aiAnswer = await aiReply(phone, text, null, isFirstContact);
+  const aiAnswer = await aiReply(phone, text, null, isFirstContact, clientName);
   return { reply: aiAnswer, source: "ai" };
 }
 
