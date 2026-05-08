@@ -730,7 +730,7 @@ router.get("/", (req, res) => {
           <span class="label">Respostas por IA ↗</span>
         </div>
       </div>
-      <a href="https://console.anthropic.com" target="_blank" rel="noopener" style="text-decoration:none;">
+      <a href="https://platform.claude.com/settings/billing" target="_blank" rel="noopener" style="text-decoration:none;">
       <div class="stat-card teal" style="cursor:pointer;" title="Abrir Anthropic Console">
         <div class="stat-icon teal">🧠</div>
         <div class="stat-body">
