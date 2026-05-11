@@ -83,8 +83,8 @@ async function checkInactiveClients() {
       // Persist before send to prevent duplicate on crash
       state[phone] = { sentAt: new Date().toISOString() };
       saveState(state);
-      await sendMessage(phone, msg);
-      addConversation(phone, last.name, "[follow-up automático]", msg, "followup");
+      const wamid = await sendMessage(phone, msg);
+      addConversation(phone, last.name, "[follow-up automático]", msg, "followup", wamid);
       console.log(`[followup] enviado para ${maskPhone(phone)}`);
     } catch (err) {
       console.error(`[followup] falhou para ${maskPhone(phone)}: ${err.message}`);

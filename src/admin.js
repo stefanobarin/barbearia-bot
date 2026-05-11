@@ -490,6 +490,15 @@ const CSS = `
     box-shadow: 0 2px 8px rgba(37,99,235,0.3);
   }
   .bubble-label { font-size: 0.68rem; color: #94a3b8; margin-bottom: 4px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; }
+  .read-status {
+    font-size: 0.68rem;
+    text-align: right;
+    margin-top: 3px;
+    opacity: 0.75;
+    letter-spacing: 0.2px;
+  }
+  .read-status.seen { color: #93c5fd; }
+  .read-status.delivered { color: rgba(255,255,255,0.45); }
 
   /* ── Empty state ── */
   .empty {
@@ -798,7 +807,7 @@ router.get("/", (req, res) => {
             </div>
             <div>
               <div class="bubble-label" style="text-align:right">Bot</div>
-              <div class="bubble bot">${escapeHtml(c.reply)}</div>
+              <div class="bubble bot">${escapeHtml(c.reply)}${c.wamid ? `<div class="read-status ${c.readAt ? "seen" : "delivered"}">${c.readAt ? `✓✓ Visto ${formatDate(c.readAt)}` : "✓✓ Entregue"}</div>` : ""}</div>
             </div>
           </div>
         </div>
@@ -1100,7 +1109,7 @@ router.get("/cliente/:phone", (req, res) => {
           </div>
           <div>
             <div class="bubble-label" style="text-align:right">Bot</div>
-            <div class="bubble bot">${escapeHtml(c.reply)}</div>
+            <div class="bubble bot">${escapeHtml(c.reply)}${c.wamid ? `<div class="read-status ${c.readAt ? "seen" : "delivered"}">${c.readAt ? `✓✓ Visto ${formatDate(c.readAt)}` : "✓✓ Entregue"}</div>` : ""}</div>
           </div>
         </div>
       </div>

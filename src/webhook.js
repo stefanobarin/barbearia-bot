@@ -11,7 +11,7 @@ const router = express.Router();
 const { classifyIntent, buildReply } = require("./intentClassifier");
 const { aiReply } = require("./aiReply");
 const { sendMessage } = require("./whatsapp");
-const { addConversation, hasPhone } = require("./conversations");
+const { addConversation, markRead, hasPhone } = require("./conversations");
 const { sendAlert } = require("./alerts");
 const { downloadWhatsAppMedia } = require("./media");
 const { maskPhone } = require("./utils");
@@ -113,6 +113,13 @@ router.post("/", async (req, res) => {
       const value    = change?.value;
       const messages = value?.messages || [];
       const contacts = value?.contacts || [];
+      const statuses = value?.statuses || [];
+
+      for (const status of statuses) {
+        if (status.status === "read") {
+          markRead(status.id);
+        }
+      }
 
       for (let i = 0; i < messages.length; i++) {
         const message = messages[i];
@@ -252,8 +259,8 @@ async function processIncoming(message, contact) {
   }
 
   const { reply, source } = await handleMessage(phone, text, image, name);
-  await sendMessage(phone, reply);
-  addConversation(phone, name, image ? `[imagem] ${text || "(sem legenda)"}` : text, reply, source);
+  const wamid = await sendMessage(phone, reply);
+  addConversation(phone, name, image ? `[imagem] ${text || "(sem legenda)"}` : text, reply, source, wamid);
 
   console.log(`[webhook] Replied to ${maskPhone(phone)} (${source})`);
 

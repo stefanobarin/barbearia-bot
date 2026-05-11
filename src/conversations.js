@@ -37,7 +37,7 @@ function save(entries) {
     .catch((err) => console.error("[conversations] write error:", err.message));
 }
 
-function addConversation(phone, name, message, reply, source) {
+function addConversation(phone, name, message, reply, source, wamid) {
   _phoneSet.add(phone);
   _cache.push({
     timestamp: new Date().toISOString(),
@@ -46,6 +46,8 @@ function addConversation(phone, name, message, reply, source) {
     message,
     reply,
     source,
+    wamid: wamid || null,
+    readAt: null,
   });
   if (_cache.length > MAX_ENTRIES) {
     const pruned = _cache.length - MAX_ENTRIES;
@@ -53,6 +55,15 @@ function addConversation(phone, name, message, reply, source) {
     console.warn(`[conversations] ${pruned} entradas antigas removidas (limite: ${MAX_ENTRIES}).`);
   }
   save(_cache);
+}
+
+function markRead(wamid) {
+  if (!wamid) return;
+  const entry = _cache.find(e => e.wamid === wamid);
+  if (!entry || entry.readAt) return;
+  entry.readAt = new Date().toISOString();
+  save(_cache);
+  console.log(`[conversations] readAt set for wamid ${wamid}`);
 }
 
 // O(1) — used in webhook hot path
@@ -85,4 +96,4 @@ function getAll() {
   return _cache;
 }
 
-module.exports = { addConversation, hasPhone, todayConversations, weekConversations, byPhone, getAll };
+module.exports = { addConversation, markRead, hasPhone, todayConversations, weekConversations, byPhone, getAll };

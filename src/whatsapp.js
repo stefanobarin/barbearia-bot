@@ -53,7 +53,7 @@ async function sendMessage(to, text) {
 
       const wamid = res.data?.messages?.[0]?.id || "unknown";
       console.log(`[whatsapp] sent to ${to} — wamid: ${wamid}`);
-      return;
+      return wamid;
     } catch (err) {
       lastErr = err;
       const status = err.response?.status;
